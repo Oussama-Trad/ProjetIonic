@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000/api';
+  private apiUrl = 'http://localhost:5000/api'; // URL de ton backend Flask
 
   constructor(private http: HttpClient) {}
 
@@ -39,6 +39,7 @@ export class AuthService {
   }
 
   getMedecin(email: string): Observable<any> {
+    console.log(`Appel API getMedecin pour email : ${email}`);
     return this.http.get(`${this.apiUrl}/medecin`, { params: { email } });
   }
 
@@ -58,7 +59,37 @@ export class AuthService {
     });
   }
 
+  updateUserAccount(user: any): Observable<any> {
+    const token = localStorage.getItem('token');
+    return this.http.put(`${this.apiUrl}/user/account`, user, {
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
+      }
+    });
+  }
+
   deleteUser(email: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/user`, { params: { email } });
+  }
+
+  updateMedecin(medecin: any): Observable<any> {
+    const token = localStorage.getItem('token');
+    return this.http.put(`${this.apiUrl}/medecin/update`, medecin, {
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
+      }
+    });
+  }
+
+  updateMedecinAccount(medecin: any): Observable<any> {
+    const token = localStorage.getItem('token');
+    return this.http.put(`${this.apiUrl}/medecin/account`, medecin, {
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        'Content-Type': 'application/json' 
+      }
+    });
   }
 }

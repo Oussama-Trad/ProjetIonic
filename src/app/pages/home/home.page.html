@@ -30,7 +30,7 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Prénom</ion-label>
-          <ion-input [(ngModel)]="user.firstName" name="firstName" required></ion-input>
+          <ion-input [(ngModel)]="user.firstName" name="firstName" placeholder="Entrez votre prénom" required></ion-input>
         </ion-item>
 
         <ion-item *ngIf="!isEditing">
@@ -38,7 +38,7 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Nom</ion-label>
-          <ion-input [(ngModel)]="user.lastName" name="lastName" required></ion-input>
+          <ion-input [(ngModel)]="user.lastName" name="lastName" placeholder="Entrez votre nom" required></ion-input>
         </ion-item>
 
         <ion-item *ngIf="!isEditing">
@@ -46,7 +46,7 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Téléphone</ion-label>
-          <ion-input [(ngModel)]="user.phoneNumber" name="phoneNumber" required></ion-input>
+          <ion-input [(ngModel)]="user.phoneNumber" name="phoneNumber" placeholder="Entrez votre numéro" required></ion-input>
         </ion-item>
 
         <ion-item *ngIf="!isEditing">
@@ -58,7 +58,7 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Date de naissance</ion-label>
-          <ion-input type="date" [(ngModel)]="user.birthDate" name="birthDate" required></ion-input>
+          <ion-input type="date" [(ngModel)]="user.birthDate" name="birthDate" placeholder="Entrez votre date de naissance" required></ion-input>
         </ion-item>
 
         <ion-item *ngIf="!isEditing">
@@ -66,7 +66,7 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Adresse</ion-label>
-          <ion-input [(ngModel)]="user.address" name="address" required></ion-input>
+          <ion-input [(ngModel)]="user.address" name="address" placeholder="Entrez votre adresse" required></ion-input>
         </ion-item>
 
         <ion-item *ngIf="!isEditing">
@@ -74,11 +74,25 @@
         </ion-item>
         <ion-item *ngIf="isEditing">
           <ion-label position="floating">Sexe</ion-label>
-          <ion-select [(ngModel)]="user.gender" name="gender" required>
+          <ion-select [(ngModel)]="user.gender" name="gender" placeholder="Sélectionnez votre sexe" required>
             <ion-select-option value="Homme">Homme</ion-select-option>
             <ion-select-option value="Femme">Femme</ion-select-option>
             <ion-select-option value="Autre">Autre</ion-select-option>
           </ion-select>
+        </ion-item>
+
+        <!-- Option pour changer le mot de passe -->
+        <ion-item *ngIf="isEditing">
+          <ion-label>Changer le mot de passe</ion-label>
+          <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>
+        </ion-item>
+        <ion-item *ngIf="isEditing && changePassword">
+          <ion-label position="floating">Ancien mot de passe</ion-label>
+          <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword" placeholder="Entrez l’ancien mot de passe"></ion-input>
+        </ion-item>
+        <ion-item *ngIf="isEditing && changePassword">
+          <ion-label position="floating">Nouveau mot de passe</ion-label>
+          <ion-input type="password" [(ngModel)]="newPassword" name="newPassword" placeholder="Entrez le nouveau mot de passe"></ion-input>
         </ion-item>
       </ion-list>
 

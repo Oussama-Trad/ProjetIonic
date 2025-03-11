@@ -1,12 +1,106 @@
 ion-content {
-    --background: #f4f5f8;
+  --background: linear-gradient(135deg, #f4f5f8, #e0e4ec);
+}
+
+.welcome-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.welcome-avatar {
+  width: 50px;
+  height: 50px;
+  margin-left: 15px;
+}
+
+h1 {
+  color: #3880ff;
+  font-size: 1.8em;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  margin: 0;
+}
+
+.profile-card, .schedule-card {
+  margin: 15px;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+}
+
+.profile-card {
+  ion-card-header {
+    background: #3880ff;
+    color: white;
+    padding: 15px;
+    ion-card-title {
+      font-size: 1.4em;
+    }
   }
-  
-  ion-card {
-    margin: 10px;
+  ion-card-content {
+    padding: 20px;
+    .info-list {
+      width: 100%;
+      ion-item {
+        --border-color: #e0e0e0;
+        --padding-start: 0;
+        ion-label {
+          font-size: 1.1em;
+          color: #333;
+        }
+        ion-input, ion-select {
+          --background: #f9f9f9;
+          border-radius: 8px;
+        }
+        ion-avatar {
+          width: 40px;
+          height: 40px;
+          cursor: pointer;
+        }
+        ion-checkbox {
+          --border-color: #3880ff;
+          --background-checked: #3880ff;
+          --border-color-checked: #3880ff;
+        }
+      }
+    }
+    ion-button {
+      margin-top: 10px;
+    }
   }
-  
-  h1 {
-    text-align: center;
-    color: #3880ff;
+}
+
+.schedule-card {
+  ion-card-header {
+    background: #3880ff;
+    color: white;
+    padding: 15px;
+    ion-card-title {
+      font-size: 1.4em;
+    }
   }
+  ion-card-content {
+    padding: 15px;
+    .horaire-edit {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      ion-input {
+        --background: #f9f9f9;
+        border-radius: 8px;
+        flex: 1;
+      }
+    }
+    ion-list {
+      ion-item {
+        --border-color: #e0e0e0;
+        ion-label {
+          font-size: 1.1em;
+          color: #333;
+        }
+      }
+    }
+  }
+}

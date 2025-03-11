@@ -6,12 +6,13 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000/api'; // URL de ton backend Flask
+  private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) {}
 
   login(email: string, password: string): Observable<any> {
     const body = { email, password };
+    console.log('Envoi de la requête login au backend :', body);
     return this.http.post(`${this.apiUrl}/login`, body, {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -91,5 +92,12 @@ export class AuthService {
         'Content-Type': 'application/json' 
       }
     });
+  }
+
+  logout() {
+    localStorage.removeItem('email');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    console.log('Déconnexion effectuée, localStorage vidé');
   }
 }

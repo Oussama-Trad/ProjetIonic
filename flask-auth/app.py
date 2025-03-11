@@ -9,10 +9,10 @@ from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
 
-# Configuration CORS
+# Configuration CORS ajustée pour inclure http://localhost:8101
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:8100"],  # Frontend Ionic
+        "origins": ["http://localhost:8100", "http://localhost:8101"],  # Ajoute 8101
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }

@@ -1,20 +1,8 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-button color="light" fill="solid" (click)="goBackToAccueil()">
-        <ion-icon name="arrow-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>Espace Médecin</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
   <div class="welcome-header">
     <h1>Bienvenue dans votre espace personnel, {{ medecin.prenom || 'Médecin' }} {{ medecin.nom || '' }} !</h1>
-    <ion-avatar class="welcome-avatar">
-      <img [src]="medecin.photoProfil || 'https://via.placeholder.com/40'" alt="Photo de profil">
-    </ion-avatar>
   </div>
 
   <ion-card class="profile-card">
@@ -23,20 +11,6 @@
     </ion-card-header>
     <ion-card-content>
       <ion-list class="info-list">
-        <!-- Photo de profil dans la liste pour édition -->
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Photo de profil:</ion-label>
-          <ion-avatar slot="end">
-            <img [src]="medecin.photoProfil || 'https://via.placeholder.com/40'" alt="Photo de profil">
-          </ion-avatar>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label>Photo de profil:</ion-label>
-          <ion-avatar slot="end" (click)="updateProfilePicture()">
-            <img [src]="medecin.photoProfil || 'https://via.placeholder.com/40'" alt="Photo de profil">
-          </ion-avatar>
-        </ion-item>
-
         <ion-item *ngIf="!isEditing">
           <ion-label>Email: {{ medecin.email }}</ion-label>
         </ion-item>
@@ -104,7 +78,6 @@
           <ion-input [(ngModel)]="medecin.numeroTelephone" name="numeroTelephone" placeholder="Entrez votre numéro"></ion-input>
         </ion-item>
 
-        <!-- Option pour changer le mot de passe -->
         <ion-item *ngIf="isEditing">
           <ion-label>Changer le mot de passe</ion-label>
           <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>

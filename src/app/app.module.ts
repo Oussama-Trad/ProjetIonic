@@ -11,6 +11,7 @@ import { RegisterPage } from './pages/register/register.page';
 import { HomePage } from './pages/home/home.page';
 import { AccueilPage } from './pages/accueil/accueil.page';
 import { MedecinPage } from './pages/medecin/medecin.page';
+import { HeaderComponent } from './components/header/header.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +20,8 @@ import { MedecinPage } from './pages/medecin/medecin.page';
     RegisterPage,
     HomePage,
     AccueilPage,
-    MedecinPage
+    MedecinPage,
+    HeaderComponent
   ],
   imports: [
     BrowserModule,

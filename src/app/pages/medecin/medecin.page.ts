@@ -16,7 +16,7 @@ export class MedecinPage implements OnInit {
   isEditing = false;
   oldPassword: string = '';
   newPassword: string = '';
-  changePassword = false; // Nouvelle variable pour l’option mot de passe
+  changePassword = false;
 
   constructor(private authService: AuthService, private router: Router) {
     console.log('Page Medecin (espace personnel médecin) chargée');
@@ -52,23 +52,11 @@ export class MedecinPage implements OnInit {
     });
   }
 
-  goBackToAccueil() {
-    console.log('Clic sur le bouton Retour détecté dans MedecinPage');
-    const storedEmail = localStorage.getItem('email');
-    if (storedEmail) {
-      console.log('Email trouvé, navigation vers /accueil');
-      this.router.navigate(['/accueil']);
-    } else {
-      console.log('Pas d’email dans localStorage, redirection vers /login');
-      this.router.navigate(['/login']);
-    }
-  }
-
   toggleEdit() {
     this.isEditing = !this.isEditing;
     if (!this.isEditing) {
-      this.medecin = { ...this.originalMedecin }; // Restaure les données originales si annulation
-      this.changePassword = false; // Réinitialise l’option mot de passe
+      this.medecin = { ...this.originalMedecin };
+      this.changePassword = false;
     }
     this.oldPassword = '';
     this.newPassword = '';
@@ -78,7 +66,7 @@ export class MedecinPage implements OnInit {
   cancelEdit() {
     this.medecin = { ...this.originalMedecin };
     this.isEditing = false;
-    this.changePassword = false; // Réinitialise l’option mot de passe
+    this.changePassword = false;
     this.oldPassword = '';
     this.newPassword = '';
     console.log('Édition annulée');
@@ -143,22 +131,6 @@ export class MedecinPage implements OnInit {
   }
 
   updateProfilePicture() {
-    console.log('Clic sur avatar, ouverture du sélecteur de fichier');
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        console.log('Fichier sélectionné :', file.name);
-        const reader = new FileReader();
-        reader.onload = () => {
-          this.medecin.photoProfil = reader.result as string;
-          console.log('Photo de profil mise à jour en local :', this.medecin.photoProfil);
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    input.click();
+    // Géré par le header
   }
 }

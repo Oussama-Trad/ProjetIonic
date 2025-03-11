@@ -11,10 +11,10 @@ import { Router } from '@angular/router';
 })
 export class HomePage implements OnInit {
   user: any = {};
-  originalUser: any = {}; // Pour restaurer les données en cas d'annulation
+  originalUser: any = {};
   isEditing = false;
   email: string = '';
-  changePassword = false; // Option pour activer le changement de mot de passe
+  changePassword = false;
   oldPassword: string = '';
   newPassword: string = '';
 
@@ -38,7 +38,7 @@ export class HomePage implements OnInit {
     this.authService.getUser(this.email).subscribe({
       next: (response) => {
         this.user = response;
-        this.originalUser = { ...response }; // Sauvegarde des données originales
+        this.originalUser = { ...response };
         console.log('Données utilisateur chargées avec succès :', this.user);
       },
       error: (error: HttpErrorResponse) => {
@@ -52,24 +52,11 @@ export class HomePage implements OnInit {
     });
   }
 
-  goBackToAccueil() {
-    console.log('Clic sur le bouton Retour détecté dans HomePage');
-    const storedEmail = localStorage.getItem('email');
-    console.log('Email actuel dans localStorage :', storedEmail);
-    if (storedEmail) {
-      console.log('Email trouvé, navigation vers /accueil tout en restant connecté');
-      this.router.navigate(['/accueil']);
-    } else {
-      console.log('Pas d’email dans localStorage, redirection vers /login');
-      this.router.navigate(['/login']);
-    }
-  }
-
   toggleEdit() {
     this.isEditing = !this.isEditing;
     if (!this.isEditing) {
-      this.user = { ...this.originalUser }; // Restaure les données originales
-      this.changePassword = false; // Réinitialise l’option mot de passe
+      this.user = { ...this.originalUser };
+      this.changePassword = false;
       this.oldPassword = '';
       this.newPassword = '';
     }
@@ -162,23 +149,6 @@ export class HomePage implements OnInit {
   }
 
   updateProfilePicture() {
-    console.log('Clic sur avatar, ouverture du sélecteur de fichier');
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (event: any) => {
-      const file = event.target.files[0];
-      if (file) {
-        console.log('Fichier sélectionné :', file.name);
-        const reader = new FileReader();
-        reader.onload = () => {
-          this.user.profilePicture = reader.result as string;
-          console.log('Photo de profil mise à jour en local :', this.user.profilePicture);
-          // Pas de saveChanges() ici, on attend "Enregistrer"
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    input.click();
+    // Géré par le header maintenant
   }
 }

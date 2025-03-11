@@ -5,16 +5,27 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <form (submit)="login()">
-    <ion-item>
-      <ion-label position="floating">Adresse Mail</ion-label>
-      <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
-    </ion-item>
-    <ion-item>
-      <ion-label position="floating">Mot de passe</ion-label>
-      <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
-    </ion-item>
-    <ion-button expand="full" type="submit">Se connecter</ion-button>
-  </form>
-  <ion-button expand="block" fill="clear" (click)="goToRegister()">Pas de compte ? S’inscrire</ion-button>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Se connecter</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">Email</ion-label>
+        <ion-input type="email" [(ngModel)]="email" placeholder="Entrez votre email" required></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Mot de passe</ion-label>
+        <ion-input type="password" [(ngModel)]="password" placeholder="Entrez votre mot de passe" required></ion-input>
+      </ion-item>
+      <ion-button expand="block" (click)="login()" class="login-button">
+        <ion-icon slot="start" name="log-in"></ion-icon>
+        Connexion
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="goToRegister()">
+        <ion-icon slot="start" name="person-add"></ion-icon>
+        S'inscrire
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
 </ion-content>

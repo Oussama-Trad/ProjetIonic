@@ -1,0 +1,21 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-avatar *ngIf="isLoggedIn && (user?.photoProfil || user?.profilePicture)" (click)="updateProfilePicture()">
+        <img [src]="user?.photoProfil || user?.profilePicture" alt="Photo de profil">
+      </ion-avatar>
+      <ion-avatar *ngIf="isLoggedIn && !user?.photoProfil && !user?.profilePicture" (click)="updateProfilePicture()">
+        <img src="https://via.placeholder.com/40" alt="Photo par défaut">
+      </ion-avatar>
+      <ion-title>
+        <span *ngIf="isLoggedIn">{{ user?.prenom || user?.firstName || 'Utilisateur' }} {{ user?.nom || user?.lastName || '' }}</span>
+        <span *ngIf="!isLoggedIn">Cabinet Médical</span>
+      </ion-title>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button color="light" fill="solid" (click)="logout()" *ngIf="isLoggedIn">
+        Se déconnecter
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>

@@ -1,20 +1,4 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-button color="light" fill="solid" (click)="goBackToAccueil()">
-        <ion-icon name="arrow-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>
-      <ion-avatar *ngIf="user.profilePicture" (click)="updateProfilePicture()">
-        <img [src]="user.profilePicture" alt="Photo de profil">
-      </ion-avatar>
-      <ion-avatar *ngIf="!user.profilePicture" (click)="updateProfilePicture()">
-        <img src="https://via.placeholder.com/40" alt="Photo par défaut">
-      </ion-avatar>
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
   <h1>Bienvenue dans votre espace personnel !</h1>
@@ -81,7 +65,6 @@
           </ion-select>
         </ion-item>
 
-        <!-- Option pour changer le mot de passe -->
         <ion-item *ngIf="isEditing">
           <ion-label>Changer le mot de passe</ion-label>
           <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>

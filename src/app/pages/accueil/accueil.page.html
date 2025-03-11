@@ -1,16 +1,4 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-button (click)="goToHelp()">
-        <ion-icon slot="start" name="help-circle"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title>
-      <ion-icon name="medical" class="header-icon"></ion-icon>
-      Cabinet Médical
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
   <ion-card class="welcome-card">
@@ -19,16 +7,27 @@
     </ion-card-header>
     <ion-card-content>
       <p>Gérez vos rendez-vous médicaux en toute simplicité.</p>
-      <p>Connectez-vous ou inscrivez-vous pour commencer.</p>
+      <p *ngIf="!isLoggedIn">Rejoignez-nous pour profiter de toutes nos fonctionnalités !</p>
+      <p *ngIf="isLoggedIn">Vous êtes déjà connecté, que souhaitez-vous faire ?</p>
     </ion-card-content>
   </ion-card>
 
-  <ion-button expand="block" (click)="goToLogin()" class="login-button">
+  <ion-button *ngIf="!isLoggedIn" expand="block" (click)="goToLogin()" class="login-button">
     <ion-icon slot="start" name="log-in"></ion-icon>
     Se connecter
   </ion-button>
-  <ion-button expand="block" fill="outline" (click)="goToRegister()" class="register-button">
+  <ion-button *ngIf="!isLoggedIn" expand="block" fill="outline" (click)="goToRegister()" class="register-button">
     <ion-icon slot="start" name="person-add"></ion-icon>
     S'inscrire
+  </ion-button>
+
+  <ion-button *ngIf="isLoggedIn && role === 'patient'" expand="block" (click)="goToHome()">
+    Mon espace personnel
+  </ion-button>
+  <ion-button *ngIf="isLoggedIn && role === 'medecin'" expand="block" (click)="goToMedecin()">
+    Mon espace médecin
+  </ion-button>
+  <ion-button *ngIf="isLoggedIn" expand="block" (click)="goToRendezVous()">
+    Prendre un rendez-vous
   </ion-button>
 </ion-content>

@@ -1,13 +1,95 @@
 <ion-header>
-    <ion-toolbar color="primary">
-      <ion-title>Espace Personnel</ion-title>
-    </ion-toolbar>
-  </ion-header>
-  
-  <ion-content class="ion-padding">
-    <h1>Bienvenue dans votre espace personnel !</h1>
-    <p>Vous êtes connecté. Voici vos options :</p>
-    <ion-button expand="block" routerLink="/appointment-booking">
-      Prendre un rendez-vous
-    </ion-button>
-  </ion-content>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button disabled>
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>
+      <ion-avatar *ngIf="user.profilePicture" (click)="updateProfilePicture()">
+        <img [src]="user.profilePicture" alt="Photo de profil">
+      </ion-avatar>
+      <ion-avatar *ngIf="!user.profilePicture" (click)="updateProfilePicture()">
+        <img src="https://via.placeholder.com/40" alt="Photo par défaut">
+      </ion-avatar>
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <h1>Bienvenue dans votre espace personnel !</h1>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Vos informations</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Prénom: {{ user.firstName }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Prénom</ion-label>
+          <ion-input [(ngModel)]="user.firstName" name="firstName" required></ion-input>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Nom: {{ user.lastName }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Nom</ion-label>
+          <ion-input [(ngModel)]="user.lastName" name="lastName" required></ion-input>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Téléphone: {{ user.phoneNumber }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Téléphone</ion-label>
+          <ion-input [(ngModel)]="user.phoneNumber" name="phoneNumber" required></ion-input>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Email: {{ user.email }}</ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Date de naissance: {{ user.birthDate }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Date de naissance</ion-label>
+          <ion-input type="date" [(ngModel)]="user.birthDate" name="birthDate" required></ion-input>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Adresse: {{ user.address }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Adresse</ion-label>
+          <ion-input [(ngModel)]="user.address" name="address" required></ion-input>
+        </ion-item>
+
+        <ion-item *ngIf="!isEditing">
+          <ion-label>Sexe: {{ user.gender }}</ion-label>
+        </ion-item>
+        <ion-item *ngIf="isEditing">
+          <ion-label position="floating">Sexe</ion-label>
+          <ion-select [(ngModel)]="user.gender" name="gender" required>
+            <ion-select-option value="Homme">Homme</ion-select-option>
+            <ion-select-option value="Femme">Femme</ion-select-option>
+            <ion-select-option value="Autre">Autre</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ion-list>
+
+      <ion-button *ngIf="!isEditing" expand="block" (click)="toggleEdit()">Modifier</ion-button>
+      <ion-button *ngIf="isEditing" expand="block" color="success" (click)="saveChanges()">Enregistrer</ion-button>
+      <ion-button *ngIf="isEditing" expand="block" color="light" (click)="toggleEdit()">Annuler</ion-button>
+      <ion-button expand="block" color="danger" (click)="deleteAccount()">Supprimer le compte</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-button expand="block" routerLink="/appointment-booking">
+    Prendre un rendez-vous
+  </ion-button>
+</ion-content>

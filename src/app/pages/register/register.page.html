@@ -1,5 +1,10 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="goBackToHome()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
     <ion-title>Inscription</ion-title>
   </ion-toolbar>
 </ion-header>
@@ -41,6 +46,15 @@
         <ion-select-option value="Femme">Femme</ion-select-option>
         <ion-select-option value="Autre">Autre</ion-select-option>
       </ion-select>
+    </ion-item>
+    <ion-item>
+      <ion-label>Photo de profil</ion-label>
+      <input type="file" accept="image/*" (change)="uploadProfilePicture($event)" required>
+    </ion-item>
+    <ion-item *ngIf="profilePicture">
+      <ion-avatar>
+        <img [src]="profilePicture" alt="Aperçu de la photo de profil">
+      </ion-avatar>
     </ion-item>
     <ion-button expand="full" type="submit">S'inscrire</ion-button>
   </form>

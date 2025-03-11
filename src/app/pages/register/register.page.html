@@ -1,37 +1,47 @@
 <ion-header>
-    <ion-toolbar>
-      <ion-title>Inscription</ion-title>
-    </ion-toolbar>
-  </ion-header>
-  
-  <ion-content class="ion-padding">
-    <form (submit)="register()">
-      <ion-item>
-        <ion-label position="floating">Prénom</ion-label>
-        <ion-input type="text" [(ngModel)]="firstName" name="firstName" required></ion-input>
-      </ion-item>
+  <ion-toolbar>
+    <ion-title>Inscription</ion-title>
+  </ion-toolbar>
+</ion-header>
 
-      <ion-item>
-        <ion-label position="floating">Nom</ion-label>
-        <ion-input type="text" [(ngModel)]="lastName" name="lastName" required></ion-input>
-      </ion-item>
-
-      <ion-item>
-        <ion-label position="floating">Numéro de téléphone</ion-label>
-        <ion-input type="text" [(ngModel)]="phoneNumber" name="phoneNumber" required></ion-input>
-      </ion-item>
-
-      <ion-item>
-        <ion-label position="floating">Adresse Mail</ion-label>
-        <ion-input type="text" [(ngModel)]="email" name="email" required></ion-input>
-      </ion-item>
-
-  
-      <ion-item>
-        <ion-label position="floating">Mot de passe</ion-label>
-        <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
-      </ion-item>
-  
-      <ion-button expand="full" type="submit">S'inscrire</ion-button>
-    </form>
-  </ion-content>
+<ion-content class="ion-padding">
+  <form (submit)="register()">
+    <ion-item>
+      <ion-label position="floating">Prénom</ion-label>
+      <ion-input type="text" [(ngModel)]="firstName" name="firstName" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Nom</ion-label>
+      <ion-input type="text" [(ngModel)]="lastName" name="lastName" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Numéro de téléphone</ion-label>
+      <ion-input type="text" [(ngModel)]="phoneNumber" name="phoneNumber" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Adresse Mail</ion-label>
+      <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Mot de passe</ion-label>
+      <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Date de naissance</ion-label>
+      <ion-input type="date" [(ngModel)]="birthDate" name="birthDate" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Adresse</ion-label>
+      <ion-input type="text" [(ngModel)]="address" name="address" required></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="floating">Sexe</ion-label>
+      <ion-select [(ngModel)]="gender" name="gender" required>
+        <ion-select-option value="Homme">Homme</ion-select-option>
+        <ion-select-option value="Femme">Femme</ion-select-option>
+        <ion-select-option value="Autre">Autre</ion-select-option>
+      </ion-select>
+    </ion-item>
+    <ion-button expand="full" type="submit">S'inscrire</ion-button>
+  </form>
+</ion-content>

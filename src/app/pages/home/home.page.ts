@@ -15,7 +15,7 @@ export class HomePage implements OnInit {
   email: string = '';
 
   constructor(private authService: AuthService, private router: Router) {
-    console.log('Page Home (espace personnel) chargée');
+    console.log('Page Home (espace personnel patient) chargée');
   }
 
   ngOnInit() {
@@ -39,11 +39,25 @@ export class HomePage implements OnInit {
       error: (error: HttpErrorResponse) => {
         console.error('Erreur lors du chargement des données utilisateur :', error);
         alert('Erreur : ' + (error.error?.msg || 'Impossible de charger les données'));
-        localStorage.removeItem('email');  // Nettoie si erreur critique
+        localStorage.removeItem('email');
         localStorage.removeItem('token');
+        localStorage.removeItem('role');
         this.router.navigate(['/login']);
       }
     });
+  }
+
+  goBackToAccueil() {
+    console.log('Clic sur le bouton Retour détecté dans HomePage');
+    const storedEmail = localStorage.getItem('email');
+    console.log('Email actuel dans localStorage :', storedEmail);
+    if (storedEmail) {
+      console.log('Email trouvé, navigation vers /accueil tout en restant connecté');
+      this.router.navigate(['/accueil']);
+    } else {
+      console.log('Pas d’email dans localStorage, redirection vers /login');
+      this.router.navigate(['/login']);
+    }
   }
 
   toggleEdit() {
@@ -81,6 +95,7 @@ export class HomePage implements OnInit {
           alert('Compte supprimé avec succès.');
           localStorage.removeItem('email');
           localStorage.removeItem('token');
+          localStorage.removeItem('role');
           this.router.navigate(['/login']);
         },
         error: (error: HttpErrorResponse) => {

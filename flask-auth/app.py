@@ -1,51 +1,52 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from pymongo import MongoClient
+from bson.objectid import ObjectId
+import jwt
+from datetime import datetime, timedelta
 import bcrypt
-import base64
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:*"}})
 
-# Connexion à MongoDB
 client = MongoClient('mongodb://localhost:27017/')
 db = client['cabinet_medical']
-users = db['users']
+users_collection = db['users']
+medecins_collection = db['Medecins']
+
+SECRET_KEY = "your-secret-key"
+
+def hash_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password, hashed):
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
-    first_name = data.get('firstName')
-    last_name = data.get('lastName')
-    phone_number = data.get('phoneNumber')
     email = data.get('email')
-    password = data.get('password')
-    birth_date = data.get('birthDate')
-    address = data.get('address')
-    gender = data.get('gender')
-    profile_picture = data.get('profilePicture')  # Nouveau champ obligatoire
-
-    # Vérifie si tous les champs requis sont présents
-    if not all([first_name, last_name, phone_number, email, password, birth_date, address, gender, profile_picture]):
-        return jsonify({'msg': 'Tous les champs, y compris la photo de profil, sont requis'}), 400
-
-    if users.find_one({'email': email}):
-        return jsonify({'msg': 'Email already exists'}), 400
-
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-    user = {
-        'firstName': first_name,
-        'lastName': last_name,
-        'phoneNumber': phone_number,
+    
+    if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
+        return jsonify({'msg': 'Email déjà utilisé'}), 400
+    
+    hashed_password = hash_password(data['password'])
+    user_data = {
+        'id': str(ObjectId()),
+        'firstName': data['firstName'],
+        'lastName': data['lastName'],
+        'phoneNumber': data['phoneNumber'],
         'email': email,
         'password': hashed_password,
-        'birthDate': birth_date,
-        'address': address,
-        'gender': gender,
-        'profilePicture': profile_picture  # Stocke la photo (base64)
+        'birthDate': data['birthDate'],
+        'address': data['address'],
+        'gender': data['gender'],
+        'profilePicture': data.get('profilePicture', ''),
+        'historiqueRendezVous': [],
+        'createdAt': datetime.utcnow()
     }
-    users.insert_one(user)
-    return jsonify({'msg': 'User registered successfully', 'email': email}), 201
+    users_collection.insert_one(user_data)
+    return jsonify({'email': email}), 201
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -53,24 +54,47 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    user = users.find_one({'email': email})
-    if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
-        return jsonify({'access_token': 'xyz123', 'email': email}), 200
-    return jsonify({'msg': 'Invalid credentials'}), 401
+    medecin = medecins_collection.find_one({'email': email})
+    if medecin and verify_password(password, medecin['motDePasse']):
+        token = jwt.encode({
+            'email': email,
+            'role': 'medecin',
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        }, SECRET_KEY)
+        return jsonify({'access_token': token, 'email': email, 'role': 'medecin'}), 200
+
+    user = users_collection.find_one({'email': email})
+    if user and verify_password(password, user['password']):
+        token = jwt.encode({
+            'email': email,
+            'role': 'patient',
+            'exp': datetime.utcnow() + timedelta(hours=24)
+        }, SECRET_KEY)
+        return jsonify({'access_token': token, 'email': email, 'role': 'patient'}), 200
+
+    return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
 
 @app.route('/api/user', methods=['GET'])
 def get_user():
     email = request.args.get('email')
-    user = users.find_one({'email': email}, {'_id': 0, 'password': 0})
+    user = users_collection.find_one({'email': email}, {'_id': 0, 'password': 0})
     if user:
         return jsonify(user), 200
-    return jsonify({'msg': 'User not found'}), 404
+    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+@app.route('/api/medecin', methods=['GET'])
+def get_medecin():
+    email = request.args.get('email')
+    medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
+    if medecin:
+        return jsonify(medecin), 200
+    return jsonify({'msg': 'Médecin non trouvé'}), 404
 
 @app.route('/api/user', methods=['PUT'])
 def update_user():
     data = request.get_json()
     email = data.get('email')
-    updates = {
+    update_data = {
         'firstName': data.get('firstName'),
         'lastName': data.get('lastName'),
         'phoneNumber': data.get('phoneNumber'),
@@ -79,18 +103,18 @@ def update_user():
         'gender': data.get('gender'),
         'profilePicture': data.get('profilePicture')
     }
-    result = users.update_one({'email': email}, {'$set': updates})
-    if result.matched_count > 0:
-        return jsonify({'msg': 'User updated successfully'}), 200
-    return jsonify({'msg': 'User not found'}), 404
+    result = users_collection.update_one({'email': email}, {'$set': update_data})
+    if result.modified_count > 0:
+        return jsonify({'msg': 'Profil mis à jour'}), 200
+    return jsonify({'msg': 'Aucune mise à jour effectuée'}), 400
 
 @app.route('/api/user', methods=['DELETE'])
 def delete_user():
     email = request.args.get('email')
-    result = users.delete_one({'email': email})
+    result = users_collection.delete_one({'email': email})
     if result.deleted_count > 0:
-        return jsonify({'msg': 'User deleted successfully'}), 200
-    return jsonify({'msg': 'User not found'}), 404
+        return jsonify({'msg': 'Compte supprimé'}), 200
+    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True)

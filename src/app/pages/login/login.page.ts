@@ -13,7 +13,9 @@ export class LoginPage {
   email: string = '';
   password: string = '';
 
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(private router: Router, private authService: AuthService) {
+    console.log('LoginPage chargée');
+  }
 
   login() {
     console.log('Tentative de connexion avec :', this.email, this.password);
@@ -23,8 +25,18 @@ export class LoginPage {
         console.log('Réponse du backend :', response);
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('email', response.email);
-        console.log('Token et email stockés :', { token: localStorage.getItem('token'), email: localStorage.getItem('email') });
-        this.router.navigate(['/home']).then(() => console.log('Redirection réussie vers /home après connexion'));
+        localStorage.setItem('role', response.role);
+        console.log('Token, email et rôle stockés :', {
+          token: localStorage.getItem('token'),
+          email: localStorage.getItem('email'),
+          role: localStorage.getItem('role')
+        });
+
+        if (response.role === 'medecin') {
+          this.router.navigate(['/medecin']).then(() => console.log('Redirection réussie vers /medecin'));
+        } else {
+          this.router.navigate(['/home']).then(() => console.log('Redirection réussie vers /home'));
+        }
       },
       error: (error: HttpErrorResponse) => {
         console.error('Erreur complète :', error);
@@ -34,18 +46,7 @@ export class LoginPage {
   }
 
   goToRegister() {
+    console.log('Redirection vers /register');
     this.router.navigate(['/register']);
-  }
-
-  goBackToHome() {
-    console.log('Clic sur le bouton Retour détecté');  // Log pour confirmer le clic
-    const storedEmail = localStorage.getItem('email');
-    console.log('Retour à l’accueil, email actuel dans localStorage :', storedEmail);
-    if (storedEmail) {
-      this.router.navigate(['/home']);
-    } else {
-      console.log('Pas d’email dans localStorage, redirection vers /login');
-      this.router.navigate(['/login']);
-    }
   }
 }

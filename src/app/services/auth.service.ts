@@ -38,6 +38,10 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/user`, { params: { email } });
   }
 
+  getMedecin(email: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/medecin`, { params: { email } });
+  }
+
   updateUser(
     email: string,
     firstName: string,

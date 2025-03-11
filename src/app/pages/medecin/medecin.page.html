@@ -1,0 +1,58 @@
+<ion-header>
+    <ion-toolbar color="primary">
+      <ion-buttons slot="start">
+        <ion-button color="light" fill="solid" (click)="goBackToAccueil()">
+          <ion-icon name="arrow-back-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+      <ion-title>Espace Médecin</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  
+  <ion-content class="ion-padding">
+    <h1>Bienvenue, {{ medecin.prenom }} {{ medecin.nom }}</h1>
+  
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Vos informations</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item>
+            <ion-label>Email: {{ medecin.email }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Spécialité: {{ medecin.specialite }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Âge: {{ medecin.age }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Date de naissance: {{ medecin.dateDeNaissance }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Adresse: {{ medecin.adresse }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Genre: {{ medecin.genre }}</ion-label>
+          </ion-item>
+          <ion-item>
+            <ion-label>Numéro de téléphone: {{ medecin.numeroTelephone }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Vos horaires de disponibilité</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list>
+          <ion-item *ngFor="let horaire of medecin.horairesDisponibilite">
+            <ion-label>{{ horaire.jour }}: {{ horaire.debut }} - {{ horaire.fin }}</ion-label>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  </ion-content>

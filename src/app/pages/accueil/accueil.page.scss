@@ -1,0 +1,20 @@
+.welcome-card {
+    margin-top: 20px;
+  }
+  
+  .action-buttons {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .login-button {
+    --background: #3880ff;
+    --color: white;
+  }
+  
+  .register-button {
+    --border-color: #3880ff;
+    --color: #3880ff;
+  }

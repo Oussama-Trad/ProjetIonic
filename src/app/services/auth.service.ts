@@ -6,11 +6,14 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000';  // URL de ton backend Flask
+  private apiUrl = 'http://localhost:5000/api';  // Remplace par l’URL exacte de ton backend
 
   constructor(private http: HttpClient) {}
 
   login(email: string, password: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/login`, { email, password });
+    const body = { email, password };
+    return this.http.post(`${this.apiUrl}/login`, body, {
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

@@ -17,7 +17,7 @@ export interface MedicalDocument {
   providedIn: 'root'
 })
 export class DocumentService {
-  private apiUrl = 'http://localhost:3000/api/documents';
+  private apiUrl = 'http://localhost:5000/api/documents';
 
   constructor(private http: HttpClient) {}
 

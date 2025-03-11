@@ -1,22 +1,17 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
-// Interface pour la réponse de l'endpoint /login
 interface LoginResponse {
   access_token: string;
 }
 
 @Component({
   selector: 'app-login',
-  standalone: true,
-  imports: [IonicModule, FormsModule, CommonModule],
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
+  standalone: false
 })
 export class LoginPage {
   email: string = '';
@@ -28,7 +23,7 @@ export class LoginPage {
     console.log('Connexion avec :', this.email, this.password);
 
     this.authService.login(this.email, this.password).subscribe(
-      (response: LoginResponse) => {  // Ajoute le type ici
+      (response: LoginResponse) => {
         console.log('Connexion réussie :', response);
         localStorage.setItem('token', response.access_token);
         this.router.navigate(['/home']);

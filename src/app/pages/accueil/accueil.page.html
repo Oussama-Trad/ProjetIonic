@@ -1,0 +1,42 @@
+<ion-header>
+    <ion-toolbar color="primary">
+      <ion-buttons slot="start">
+        <ion-button (click)="goToHelp()">
+          <ion-icon slot="start" name="help-circle"></ion-icon>
+          Aide
+        </ion-button>
+      </ion-buttons>
+      <ion-title>
+        <ion-icon name="medical" class="header-icon"></ion-icon>
+        Cabinet Médical
+      </ion-title>
+    </ion-toolbar>
+  </ion-header>
+  
+  <ion-content class="ion-padding">
+    <ion-card class="welcome-card">
+      <ion-card-header>
+        <ion-card-title>Bienvenue sur notre application</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Gérez vos rendez-vous médicaux de manière simple et efficace.</p>
+        <p>Accédez à votre espace personnel pour :</p>
+        <ul>
+          <li>Prendre rendez-vous</li>
+          <li>Consulter vos prochains rendez-vous</li>
+          <li>Gérer vos informations personnelles</li>
+        </ul>
+      </ion-card-content>
+    </ion-card>
+  
+    <div class="action-buttons">
+      <ion-button expand="block" (click)="goToLogin()" class="login-button">
+        <ion-icon slot="start" name="log-in"></ion-icon>
+        Se connecter
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="goToRegister()" class="register-button">
+        <ion-icon slot="start" name="person-add"></ion-icon>
+        S'inscrire
+      </ion-button>
+    </div>
+  </ion-content>

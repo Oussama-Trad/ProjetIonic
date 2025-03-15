@@ -1,31 +1,45 @@
-<ion-header>
-    <ion-toolbar color="primary">
-      <ion-buttons slot="start">
-        <ion-back-button defaultHref="/accueil"></ion-back-button>
-      </ion-buttons>
-      <ion-title>Prendre un rendez-vous avec {{ medecin.prenom }} {{ medecin.nom }}</ion-title>
+<ion-content>
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Rendez-vous avec {{ medecin.prenom }} {{ medecin.nom }}</ion-title>
     </ion-toolbar>
   </ion-header>
-  
-  <ion-content class="ion-padding">
-    <ion-card>
-      <ion-card-content>
-        <!-- Calendrier -->
-        <ion-list>
-          <ion-list-header>Créneaux disponibles</ion-list-header>
-          <ion-item *ngFor="let slot of availableSlots" (click)="selectSlot(slot.date, slot.heure)" [color]="slot.disponible ? 'success' : 'danger'" [button]="slot.disponible">
-            <ion-label>{{ slot.date }} - {{ slot.heure }}</ion-label>
-            <ion-icon *ngIf="slot.date === selectedDate && slot.heure === selectedHeure" name="checkmark" slot="end"></ion-icon>
-          </ion-item>
-        </ion-list>
-  
-        <!-- Motif -->
-        <ion-item>
-          <ion-label position="floating">Motif</ion-label>
-          <ion-input [(ngModel)]="motif"></ion-input>
-        </ion-item>
-  
-        <ion-button expand="block" (click)="createRendezVous()" [disabled]="!selectedDate || !selectedHeure">Confirmer</ion-button>
-      </ion-card-content>
-    </ion-card>
-  </ion-content>
+
+  <div class="calendar">
+    <div class="calendar-header">
+      <ion-button (click)="previousMonth()">Précédent</ion-button>
+      <span>{{ getMonthYear() }}</span>
+      <ion-button (click)="nextMonth()">Suivant</ion-button>
+    </div>
+    <div class="calendar-grid">
+      <div class="calendar-day-header" *ngFor="let day of ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']">
+        {{ day }}
+      </div>
+      <div class="calendar-day" *ngFor="let day of calendarDays" 
+           [ngClass]="{
+             'available': day.isAvailable,
+             'unavailable': !day.isAvailable,
+             'today': day.isToday,
+             'selected': selectedDay === day.date
+           }"
+           (click)="selectDay(day)">
+        {{ day.date.getDate() }}
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="selectedDay" class="time-slots">
+    <h3>Créneaux disponibles le {{ selectedDay | date:'dd/MM/yyyy' }}</h3>
+    <ion-list>
+      <ion-item *ngFor="let slot of getHoursForSelectedDay()" 
+                [ngClass]="{'unavailable-slot': !slot.disponible}"
+                (click)="slot.disponible && (selectedHeure = slot.heure)">
+        <ion-label>{{ slot.heure }}</ion-label>
+        <ion-icon *ngIf="selectedHeure === slot.heure" name="checkmark-circle" slot="end"></ion-icon>
+      </ion-item>
+    </ion-list>
+    <ion-button expand="block" (click)="createRendezVous()" [disabled]="!selectedHeure">Confirmer</ion-button>
+  </div>
+
+  <ion-button expand="block" (click)="goToAccueil()">Retour à l'accueil</ion-button>
+</ion-content>

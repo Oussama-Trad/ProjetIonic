@@ -10,6 +10,7 @@ import { HeaderComponent } from '../../components/header/header.component';
   templateUrl: './accueil-medecin.page.html',
   styleUrls: ['./accueil-medecin.page.scss'],
   standalone: false,
+ 
 })
 export class AccueilMedecinPage implements OnInit {
   medecin: any = {};
@@ -40,39 +41,50 @@ export class AccueilMedecinPage implements OnInit {
         this.rendezVousDemandes = response.rendezVousDemandes || [];
         this.rendezVousConfirmes = response.rendezVousConfirmes || [];
       },
-      error: (err: any) => console.error('Erreur chargement données médecin :', err)
+      error: (err: any) => console.error('Erreur chargement données médecin :', err),
     });
   }
 
   manageRendezVous(rdv: any, action: 'accept' | 'reject') {
-    this.authService.manageRendezVous(rdv.patientId, rdv.date, rdv.heure, action).subscribe({ // patientId reste ici car il vient de l'objet rdv
+    this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, action).subscribe({
       next: () => {
         console.log(`Rendez-vous ${action}é avec succès`);
         this.loadMedecinData(this.medecin.email);
       },
-      error: (err: any) => console.error(`Erreur ${action} rendez-vous :`, err)
+      error: (err: any) => console.error(`Erreur ${action} rendez-vous :`, err),
     });
   }
 
   cancelRendezVous(rdv: any) {
-    this.authService.cancelRendezVous(this.medecin.email, rdv.patientId, rdv.date, rdv.heure).subscribe({ // patientId reste ici car il vient de l'objet rdv
+    this.authService.cancelRendezVous(this.medecin.email, rdv.userEmail, rdv.date, rdv.heure).subscribe({
       next: () => {
         console.log('Rendez-vous annulé avec succès');
         this.loadMedecinData(this.medecin.email);
       },
-      error: (err: any) => console.error('Erreur annulation rendez-vous :', err)
+      error: (err: any) => console.error('Erreur annulation rendez-vous :', err),
     });
   }
 
-  viewDocuments(userEmail: string) { // Changé de patientId à userEmail
-    this.router.navigate(['/documents'], { queryParams: { userEmail } });
+  viewDocuments(userEmail: string) {
+    this.authService.getUser(userEmail).subscribe({
+      next: (user: any) => {
+        const docs = user.documents || [];
+        alert(`Documents de ${user.firstName} ${user.lastName}:\n${docs.map((d: any) => d.nom).join('\n')}`);
+      },
+      error: (err: any) => console.error('Erreur chargement documents :', err),
+    });
   }
 
   addConsultation(rdv: any) {
-    this.router.navigate(['/consultation'], { queryParams: { userEmail: rdv.patientId, date: rdv.date, heure: rdv.heure } }); // Changé patientId à userEmail
+    this.router.navigate(['/consultation'], { queryParams: { userEmail: rdv.userEmail, date: rdv.date, heure: rdv.heure } });
   }
 
   goToProfile() {
     this.router.navigate(['/medecin']);
+  }
+
+  // Méthode publique pour naviguer vers la page de login
+  goToLogin() {
+    this.router.navigate(['/login']);
   }
 }

@@ -1,0 +1,59 @@
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    text-align: center;
+  
+    .calendar-day-header {
+      font-weight: bold;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+  
+    .calendar-day {
+      padding: 10px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+  
+      &.available {
+        background-color: #4caf50; // Vert pour les jours disponibles
+        color: white;
+      }
+  
+      &.unavailable {
+        background-color: #f44336; // Rouge pour les jours indisponibles
+        color: white;
+        cursor: not-allowed;
+      }
+  
+      &.today {
+        border: 2px solid #2196f3; // Bleu pour le jour actuel
+      }
+  
+      &.selected {
+        border: 2px solid #ffeb3b; // Jaune pour le jour sélectionné
+      }
+    }
+  }
+  
+  .time-slots {
+    margin-top: 20px;
+    padding: 10px;
+  
+    ion-item {
+      cursor: pointer;
+  
+      &.unavailable-slot {
+        background-color: #f44336; // Rouge pour les créneaux indisponibles
+        color: white;
+        cursor: not-allowed;
+      }
+    }
+  }
+  
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+  }

@@ -1,31 +1,26 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Connexion</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content>
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Connexion</ion-title>
+    </ion-toolbar>
+  </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Se connecter</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <ion-item>
-        <ion-label position="floating">Email</ion-label>
-        <ion-input type="email" [(ngModel)]="email" placeholder="Entrez votre email" required></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-label position="floating">Mot de passe</ion-label>
-        <ion-input type="password" [(ngModel)]="password" placeholder="Entrez votre mot de passe" required></ion-input>
-      </ion-item>
-      <ion-button expand="block" (click)="login()" class="login-button">
-        <ion-icon slot="start" name="log-in"></ion-icon>
-        Connexion
-      </ion-button>
-      <ion-button expand="block" fill="outline" (click)="goToRegister()">
-        <ion-icon slot="start" name="person-add"></ion-icon>
-        S'inscrire
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+  <div class="login-form">
+    <ion-item>
+      <ion-label position="floating">Email</ion-label>
+      <ion-input type="email" [(ngModel)]="email"></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Mot de passe</ion-label>
+      <ion-input type="password" [(ngModel)]="password"></ion-input>
+    </ion-item>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <ion-button expand="block" (click)="login()">Se connecter</ion-button>
+    <ion-button expand="block" color="light" (click)="goToRegister()">S'inscrire</ion-button>
+  </div>
 </ion-content>

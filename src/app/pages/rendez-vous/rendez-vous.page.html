@@ -1,0 +1,31 @@
+<ion-header>
+    <ion-toolbar color="primary">
+      <ion-buttons slot="start">
+        <ion-back-button defaultHref="/accueil"></ion-back-button>
+      </ion-buttons>
+      <ion-title>Prendre un rendez-vous avec {{ medecin.prenom }} {{ medecin.nom }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+  
+  <ion-content class="ion-padding">
+    <ion-card>
+      <ion-card-content>
+        <!-- Calendrier -->
+        <ion-list>
+          <ion-list-header>Créneaux disponibles</ion-list-header>
+          <ion-item *ngFor="let slot of availableSlots" (click)="selectSlot(slot.date, slot.heure)" [color]="slot.disponible ? 'success' : 'danger'" [button]="slot.disponible">
+            <ion-label>{{ slot.date }} - {{ slot.heure }}</ion-label>
+            <ion-icon *ngIf="slot.date === selectedDate && slot.heure === selectedHeure" name="checkmark" slot="end"></ion-icon>
+          </ion-item>
+        </ion-list>
+  
+        <!-- Motif -->
+        <ion-item>
+          <ion-label position="floating">Motif</ion-label>
+          <ion-input [(ngModel)]="motif"></ion-input>
+        </ion-item>
+  
+        <ion-button expand="block" (click)="createRendezVous()" [disabled]="!selectedDate || !selectedHeure">Confirmer</ion-button>
+      </ion-card-content>
+    </ion-card>
+  </ion-content>

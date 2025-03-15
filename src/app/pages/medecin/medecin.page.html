@@ -1,83 +1,41 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <div class="welcome-header">
-    <h1>Bienvenue dans votre espace personnel, {{ medecin.prenom || 'Médecin' }} {{ medecin.nom || '' }} !</h1>
-  </div>
-
-  <ion-card class="profile-card">
+  <ion-card *ngIf="isLoggedIn">
     <ion-card-header>
-      <ion-card-title>Vos informations</ion-card-title>
+      <ion-card-title>Profil Médecin</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list class="info-list">
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Email: {{ medecin.email }}</ion-label>
+      <ion-list>
+        <ion-item>
+          <ion-avatar slot="start">
+            <img [src]="medecin.photoProfil || 'assets/default-profile.png'" alt="Photo de profil">
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
+            <p>{{ medecin.email }}</p>
+          </ion-label>
         </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Email</ion-label>
-          <ion-input [(ngModel)]="medecin.email" name="email" placeholder="Entrez votre email"></ion-input>
+        <ion-item>
+          <ion-label>Téléphone</ion-label>
+          <ion-input [(ngModel)]="medecin.numeroTelephone" [disabled]="!isEditing"></ion-input>
         </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Prénom: {{ medecin.prenom }}</ion-label>
+        <ion-item>
+          <ion-label>Adresse</ion-label>
+          <ion-input [(ngModel)]="medecin.adresse" [disabled]="!isEditing"></ion-input>
         </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Prénom</ion-label>
-          <ion-input [(ngModel)]="medecin.prenom" name="prenom" placeholder="Entrez votre prénom"></ion-input>
+        <ion-item>
+          <ion-label>Date de naissance</ion-label>
+          <ion-input [(ngModel)]="medecin.dateDeNaissance" [disabled]="!isEditing"></ion-input>
         </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Nom: {{ medecin.nom }}</ion-label>
+        <ion-item>
+          <ion-label>Genre</ion-label>
+          <ion-input [(ngModel)]="medecin.genre" [disabled]="!isEditing"></ion-input>
         </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Nom</ion-label>
-          <ion-input [(ngModel)]="medecin.nom" name="nom" placeholder="Entrez votre nom"></ion-input>
+        <ion-item>
+          <ion-label>Spécialité</ion-label>
+          <ion-input [(ngModel)]="medecin.specialite" [disabled]="!isEditing"></ion-input>
         </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Spécialité: {{ medecin.specialite }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Spécialité</ion-label>
-          <ion-input [(ngModel)]="medecin.specialite" name="specialite" placeholder="Entrez votre spécialité"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Âge: {{ medecin.age }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Âge</ion-label>
-          <ion-input type="number" [(ngModel)]="medecin.age" name="age" placeholder="Entrez votre âge"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Date de naissance: {{ medecin.dateDeNaissance }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Date de naissance</ion-label>
-          <ion-input type="date" [(ngModel)]="medecin.dateDeNaissance" name="dateDeNaissance" placeholder="Entrez votre date de naissance"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Adresse: {{ medecin.adresse }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Adresse</ion-label>
-          <ion-input [(ngModel)]="medecin.adresse" name="adresse" placeholder="Entrez votre adresse"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Genre: {{ medecin.genre }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Genre</ion-label>
-          <ion-select [(ngModel)]="medecin.genre" name="genre" placeholder="Sélectionnez votre genre">
-            <ion-select-option value="Homme">Homme</ion-select-option>
-            <ion-select-option value="Femme">Femme</ion-select-option>
-          </ion-select>
-        </ion-item>
-        <ion-item *ngIf="!isEditing">
-          <ion-label>Numéro de téléphone: {{ medecin.numeroTelephone }}</ion-label>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label position="floating">Numéro de téléphone</ion-label>
-          <ion-input [(ngModel)]="medecin.numeroTelephone" name="numeroTelephone" placeholder="Entrez votre numéro"></ion-input>
-        </ion-item>
-
         <ion-item *ngIf="isEditing">
           <ion-label>Changer le mot de passe</ion-label>
           <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>
@@ -93,26 +51,18 @@
       </ion-list>
 
       <ion-button *ngIf="!isEditing" expand="block" (click)="toggleEdit()">Modifier</ion-button>
-      <ion-button *ngIf="isEditing" expand="block" color="success" (click)="saveChanges()">Enregistrer</ion-button>
+      <ion-button *ngIf="isEditing" expand="block" (click)="saveChanges()">Sauvegarder</ion-button>
       <ion-button *ngIf="isEditing" expand="block" color="light" (click)="cancelEdit()">Annuler</ion-button>
     </ion-card-content>
   </ion-card>
 
-  <ion-card class="schedule-card">
+  <ion-card *ngIf="!isLoggedIn">
     <ion-card-header>
-      <ion-card-title>Vos horaires de disponibilité</ion-card-title>
+      <ion-card-title>Non connecté</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list>
-        <ion-item *ngFor="let horaire of medecin.horairesDisponibilite; let i = index">
-          <ion-label *ngIf="!isEditing">{{ horaire.jour }}: {{ horaire.debut }} - {{ horaire.fin }}</ion-label>
-          <div *ngIf="isEditing" class="horaire-edit">
-            <ion-input [(ngModel)]="medecin.horairesDisponibilite[i].jour" placeholder="Jour"></ion-input>
-            <ion-input [(ngModel)]="medecin.horairesDisponibilite[i].debut" placeholder="Début"></ion-input>
-            <ion-input [(ngModel)]="medecin.horairesDisponibilite[i].fin" placeholder="Fin"></ion-input>
-          </div>
-        </ion-item>
-      </ion-list>
+      <p>Veuillez vous connecter pour voir votre profil.</p>
+      <ion-button expand="block" routerLink="/login">Se connecter</ion-button>
     </ion-card-content>
   </ion-card>
 </ion-content>

@@ -9,16 +9,8 @@ from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
 
-# Configuration CORS ajustée pour inclure http://localhost:8101
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:8100", "http://localhost:8101"],  # Ajoute 8101
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
-
-app.config['JWT_SECRET_KEY'] = "your-secret-key"  # Change ça pour une clé sécurisée
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:8100"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}})
+app.config['JWT_SECRET_KEY'] = "your-secret-key"
 jwt_manager = JWTManager(app)
 
 client = MongoClient('mongodb://localhost:27017/')
@@ -32,28 +24,10 @@ def hash_password(password):
 def verify_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-# Gestion des requêtes OPTIONS
-@app.route('/api/medecin/update', methods=['OPTIONS'])
-def update_medecin_options():
-    print("Requête OPTIONS reçue pour /api/medecin/update")
-    return jsonify({"msg": "OK"}), 200
-
-@app.route('/api/medecin/account', methods=['OPTIONS'])
-def update_medecin_account_options():
-    print("Requête OPTIONS reçue pour /api/medecin/account")
-    return jsonify({"msg": "OK"}), 200
-
-@app.route('/api/user/account', methods=['OPTIONS'])
-def update_user_account_options():
-    print("Requête OPTIONS reçue pour /api/user/account")
-    return jsonify({"msg": "OK"}), 200
-
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
     email = data.get('email')
-    print(f"Requête register pour email : {email}")
-    
     if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
         return jsonify({'msg': 'Email déjà utilisé'}), 400
     
@@ -69,7 +43,10 @@ def register():
         'address': data['address'],
         'gender': data['gender'],
         'profilePicture': data.get('profilePicture', ''),
+        'rendezVousFuturs': [],
         'historiqueRendezVous': [],
+        'documents': [],
+        'notifications': [],
         'createdAt': datetime.utcnow()
     }
     users_collection.insert_one(user_data)
@@ -80,28 +57,15 @@ def login():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
-    print(f"Requête login pour email : {email}")
 
     medecin = medecins_collection.find_one({'email': email})
     if medecin and verify_password(password, medecin['motDePasse']):
-        token = jwt.encode({
-            'sub': email,
-            'email': email,
-            'role': 'medecin',
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['JWT_SECRET_KEY'])
-        print(f"Token généré pour médecin : {token}")
+        token = jwt.encode({'sub': email, 'email': email, 'role': 'medecin', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
         return jsonify({'access_token': token, 'email': email, 'role': 'medecin'}), 200
 
     user = users_collection.find_one({'email': email})
     if user and verify_password(password, user['password']):
-        token = jwt.encode({
-            'sub': email,
-            'email': email,
-            'role': 'patient',
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['JWT_SECRET_KEY'])
-        print(f"Token généré pour patient : {token}")
+        token = jwt.encode({'sub': email, 'email': email, 'role': 'patient', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
         return jsonify({'access_token': token, 'email': email, 'role': 'patient'}), 200
 
     return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
@@ -117,149 +81,201 @@ def get_user():
 @app.route('/api/medecin', methods=['GET'])
 def get_medecin():
     email = request.args.get('email')
-    print(f"Requête get_medecin pour email : {email}")
     medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
     if medecin:
         return jsonify(medecin), 200
     return jsonify({'msg': 'Médecin non trouvé'}), 404
 
-@app.route('/api/medecin/update', methods=['PUT'])
+@app.route('/api/medecins', methods=['GET'])
+def get_all_medecins():
+    search_query = request.args.get('search', '')
+    medecins = medecins_collection.find({
+        '$or': [
+            {'prenom': {'$regex': search_query, '$options': 'i'}},
+            {'nom': {'$regex': search_query, '$options': 'i'}},
+            {'specialite': {'$regex': search_query, '$options': 'i'}}
+        ]
+    }, {'_id': 0, 'motDePasse': 0})
+    return jsonify(list(medecins)), 200
+
+@app.route('/api/rendezvous', methods=['POST'])
 @jwt_required()
-def update_medecin():
+def create_rendezvous():
     email = get_jwt_identity()
     data = request.get_json()
-    print(f"Requête PUT /api/medecin/update pour email: {email}, données: {data}")
-    
-    allowed_fields = ['prenom', 'nom', 'specialite', 'age', 'dateDeNaissance', 
-                      'adresse', 'genre', 'numeroTelephone', 'photoProfil', 'horairesDisponibilite']
-    update_data = {k: v for k, v in data.items() if k in allowed_fields}
-    
-    if not update_data:
-        print("Aucune donnée valide à mettre à jour")
-        return jsonify({"msg": "Aucune donnée valide à mettre à jour"}), 400
-    
-    result = medecins_collection.update_one(
-        {"email": email},
-        {"$set": update_data}
-    )
-    
-    if result.modified_count > 0:
-        print("Profil mis à jour avec succès")
-        return jsonify({"msg": "Profil mis à jour avec succès"}), 200
-    else:
-        print("Aucune modification effectuée")
-        return jsonify({"msg": "Aucune modification effectuée"}), 304
+    medecin_email = data.get('medecinEmail')
+    date = data.get('date')
+    heure = data.get('heure')
+    motif = data.get('motif')
 
-@app.route('/api/medecin/account', methods=['PUT'])
+    user = users_collection.find_one({'email': email})
+    medecin = medecins_collection.find_one({'email': medecin_email})
+    if not user or not medecin:
+        return jsonify({'msg': 'Utilisateur ou médecin non trouvé'}), 404
+
+    # Vérifier la disponibilité
+    if not is_available(medecin, date, heure):
+        return jsonify({'msg': 'Créneau non disponible'}), 400
+
+    rdv = {'medecinId': medecin['email'], 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
+    users_collection.update_one({'email': email}, {'$push': {'rendezVousFuturs': rdv}})
+    medecins_collection.update_one({'email': medecin_email}, {'$push': {'rendezVousDemandes': {
+        'patientId': user['email'], 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'
+    }}})
+
+    users_collection.update_one({'email': email}, {'$push': {'notifications': {
+        'message': f'Rendez-vous demandé avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure}',
+        'date': datetime.utcnow().isoformat(),
+        'lue': False
+    }}})
+
+    return jsonify({'msg': 'Rendez-vous demandé avec succès'}), 201
+
+def is_available(medecin, date, heure):
+    horaires = medecin.get('horairesDisponibilite', [])
+    for slot in horaires:
+        if slot['date'] == date and slot['heure'] == heure and slot['disponible']:
+            # Vérifier si aucun rendez-vous n'est déjà pris à ce créneau
+            for rdv in medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', []):
+                if rdv['date'] == date and rdv['heure'] == heure and rdv['statut'] in ['accepté', 'en attente']:
+                    return False
+            return True
+    return False
+
+@app.route('/api/medecin/rendezvous/<action>', methods=['PUT'])
 @jwt_required()
-def update_medecin_account():
+def manage_rendezvous(action):
     email = get_jwt_identity()
     data = request.get_json()
-    print(f"Requête PUT /api/medecin/account pour email: {email}, données: {data}")
-    
-    if 'oldPassword' in data and 'newPassword' in data:
-        medecin = medecins_collection.find_one({'email': email})
-        if not medecin or not verify_password(data['oldPassword'], medecin['motDePasse']):
-            print("Ancien mot de passe incorrect")
-            return jsonify({"msg": "Ancien mot de passe incorrect"}), 401
-        update_data = {'motDePasse': hash_password(data['newPassword'])}
-    else:
-        update_data = {}
-    
-    allowed_fields = ['email', 'prenom', 'nom', 'specialite', 'age', 'dateDeNaissance', 
-                      'adresse', 'genre', 'numeroTelephone', 'photoProfil', 'horairesDisponibilite']
-    update_data.update({k: v for k, v in data.items() if k in allowed_fields})
-    
-    if not update_data:
-        print("Aucune donnée valide à mettre à jour")
-        return jsonify({"msg": "Aucune donnée valide à mettre à jour"}), 400
-    
-    if 'email' in update_data and update_data['email'] != email:
-        if users_collection.find_one({'email': update_data['email']}) or medecins_collection.find_one({'email': update_data['email']}):
-            print("Nouvel email déjà utilisé")
-            return jsonify({'msg': 'Nouvel email déjà utilisé'}), 400
-    
-    result = medecins_collection.update_one(
-        {"email": email},
-        {"$set": update_data}
-    )
-    
-    if result.modified_count > 0:
-        print("Compte mis à jour avec succès")
-        if 'email' in update_data:
-            new_email = update_data['email']
-            token = jwt.encode({
-                'sub': new_email,
-                'email': new_email,
-                'role': 'medecin',
-                'exp': datetime.utcnow() + timedelta(hours=24)
-            }, app.config['JWT_SECRET_KEY'])
-            return jsonify({"msg": "Compte mis à jour avec succès", "access_token": token, "email": new_email}), 200
-        return jsonify({"msg": "Compte mis à jour avec succès"}), 200
-    else:
-        print("Aucune modification effectuée")
-        return jsonify({"msg": "Aucune modification effectuée"}), 304
+    patient_id = data.get('patientId')
+    date = data.get('date')
+    heure = data.get('heure')
 
-@app.route('/api/user', methods=['PUT'])
-def update_user():
-    data = request.get_json()
-    email = data.get('email')
-    update_data = {
-        'firstName': data.get('firstName'),
-        'lastName': data.get('lastName'),
-        'phoneNumber': data.get('phoneNumber'),
-        'address': data.get('address'),
-        'birthDate': data.get('birthDate'),
-        'gender': data.get('gender'),
-        'profilePicture': data.get('profilePicture')
-    }
-    result = users_collection.update_one({'email': email}, {'$set': update_data})
-    if result.modified_count > 0:
-        return jsonify({'msg': 'Profil mis à jour'}), 200
-    return jsonify({'msg': 'Aucune mise à jour effectuée'}), 400
+    if action not in ['accept', 'reject']:
+        return jsonify({'msg': 'Action invalide'}), 400
 
-@app.route('/api/user/account', methods=['PUT'])
+    rdv = medecins_collection.find_one({'email': email, 'rendezVousDemandes': {'$elemMatch': {'patientId': patient_id, 'date': date, 'heure': heure}}})
+    if not rdv:
+        return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
+
+    if action == 'accept':
+        medecins_collection.update_one(
+            {'email': email, 'rendezVousDemandes': {'$elemMatch': {'patientId': patient_id, 'date': date, 'heure': heure}}},
+            {'$set': {'rendezVousDemandes.$.statut': 'accepté'}}
+        )
+        medecins_collection.update_one({'email': email}, {'$push': {'rendezVousConfirmes': {
+            'patientId': patient_id, 'date': date, 'heure': heure, 'motif': data.get('motif'), 'diagnostics': [], 'prescriptions': [], 'documentsAssocies': []
+        }}})
+        users_collection.update_one(
+            {'email': patient_id, 'rendezVousFuturs': {'$elemMatch': {'date': date, 'heure': heure}}},
+            {'$set': {'rendezVousFuturs.$.statut': 'confirmé'}}
+        )
+        users_collection.update_one({'email': patient_id}, {'$push': {'notifications': {
+            'message': f'Votre rendez-vous du {date} à {heure} avec {email} a été accepté',
+            'date': datetime.utcnow().isoformat(),
+            'lue': False
+        }}})
+    else:
+        medecins_collection.update_one(
+            {'email': email, 'rendezVousDemandes': {'$elemMatch': {'patientId': patient_id, 'date': date, 'heure': heure}}},
+            {'$set': {'rendezVousDemandes.$.statut': 'rejeté'}}
+        )
+        users_collection.update_one(
+            {'email': patient_id, 'rendezVousFuturs': {'$elemMatch': {'date': date, 'heure': heure}}},
+            {'$set': {'rendezVousFuturs.$.statut': 'annulé'}}
+        )
+        users_collection.update_one({'email': patient_id}, {'$push': {'notifications': {
+            'message': f'Votre rendez-vous du {date} à {heure} avec {email} a été rejeté',
+            'date': datetime.utcnow().isoformat(),
+            'lue': False
+        }}})
+
+    return jsonify({'msg': f'Rendez-vous {action}é avec succès'}), 200
+
+@app.route('/api/medecin/rendezvous/cancel', methods=['PUT'])
 @jwt_required()
-def update_user_account():
+def cancel_rendezvous():
     email = get_jwt_identity()
     data = request.get_json()
-    print(f"Requête PUT /api/user/account pour email: {email}, données: {data}")
-    
-    if 'oldPassword' in data and 'newPassword' in data:
-        user = users_collection.find_one({'email': email})
-        if not user or not verify_password(data['oldPassword'], user['password']):
-            print("Ancien mot de passe incorrect")
-            return jsonify({"msg": "Ancien mot de passe incorrect"}), 401
-        update_data = {'password': hash_password(data['newPassword'])}
-    else:
-        update_data = {}
-    
-    allowed_fields = ['firstName', 'lastName', 'phoneNumber', 'address', 'birthDate', 'gender', 'profilePicture']
-    update_data.update({k: v for k, v in data.items() if k in allowed_fields})
-    
-    if not update_data:
-        print("Aucune donnée valide à mettre à jour")
-        return jsonify({"msg": "Aucune donnée valide à mettre à jour"}), 400
-    
-    result = users_collection.update_one(
-        {"email": email},
-        {"$set": update_data}
-    )
-    
-    if result.modified_count > 0:
-        print("Compte mis à jour avec succès")
-        return jsonify({"msg": "Compte mis à jour avec succès"}), 200
-    else:
-        print("Aucune modification effectuée")
-        return jsonify({"msg": "Aucune modification effectuée"}), 304
+    medecin_email = data.get('medecinEmail')
+    patient_id = data.get('patientId')
+    date = data.get('date')
+    heure = data.get('heure')
 
-@app.route('/api/user', methods=['DELETE'])
-def delete_user():
-    email = request.args.get('email')
-    result = users_collection.delete_one({'email': email})
-    if result.deleted_count > 0:
-        return jsonify({'msg': 'Compte supprimé'}), 200
-    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+    medecins_collection.update_one(
+        {'email': medecin_email, 'rendezVousConfirmes': {'$elemMatch': {'patientId': patient_id, 'date': date, 'heure': heure}}},
+        {'$pull': {'rendezVousConfirmes': {'patientId': patient_id, 'date': date, 'heure': heure}}}
+    )
+    users_collection.update_one(
+        {'email': patient_id, 'rendezVousFuturs': {'$elemMatch': {'date': date, 'heure': heure}}},
+        {'$set': {'rendezVousFuturs.$.statut': 'annulé'}}
+    )
+    users_collection.update_one({'email': patient_id}, {'$push': {'notifications': {
+        'message': f'Votre rendez-vous du {date} à {heure} avec {medecin_email} a été annulé',
+        'date': datetime.utcnow().isoformat(),
+        'lue': False
+    }}})
+
+    return jsonify({'msg': 'Rendez-vous annulé avec succès'}), 200
+
+@app.route('/api/user/document', methods=['POST'])
+@jwt_required()
+def upload_document():
+    email = get_jwt_identity()
+    data = request.get_json()
+    nom = data.get('nom')
+    url = data.get('url')
+    medecin_email = data.get('medecinEmail')
+
+    doc = {'nom': nom, 'url': url, 'dateEnvoi': datetime.utcnow().isoformat(), 'statut': 'envoyé', 'annotations': ''}
+    users_collection.update_one({'email': email}, {'$push': {'documents': doc}})
+    return jsonify({'msg': 'Document envoyé avec succès'}), 201
+
+@app.route('/api/medecin/consultation', methods=['PUT'])
+@jwt_required()
+def update_consultation():
+    email = get_jwt_identity()
+    data = request.get_json()
+    patient_id = data.get('patientId')
+    date = data.get('date')
+    heure = data.get('heure')
+    diagnostics = data.get('diagnostics', [])
+    prescriptions = data.get('prescriptions', [])
+
+    medecins_collection.update_one(
+        {'email': email, 'rendezVousConfirmes': {'$elemMatch': {'patientId': patient_id, 'date': date, 'heure': heure}}},
+        {'$set': {'rendezVousConfirmes.$.diagnostics': diagnostics, 'rendezVousConfirmes.$.prescriptions': prescriptions}}
+    )
+    users_collection.update_one(
+        {'email': patient_id},
+        {'$push': {'historiqueRendezVous': {
+            'medecinId': email, 'date': date, 'heure': heure, 'motif': data.get('motif'), 'diagnostics': diagnostics, 'prescriptions': prescriptions
+        }}}
+    )
+
+    return jsonify({'msg': 'Consultation mise à jour'}), 200
+
+@app.route('/api/change-password', methods=['PUT'])
+@jwt_required()
+def change_password():
+    email = get_jwt_identity()
+    data = request.get_json()
+    old_password = data.get('oldPassword')
+    new_password = data.get('newPassword')
+
+    user = users_collection.find_one({'email': email})
+    if user and verify_password(old_password, user['password']):
+        new_hashed_password = hash_password(new_password)
+        users_collection.update_one({'email': email}, {'$set': {'password': new_hashed_password}})
+        return jsonify({'msg': 'Mot de passe mis à jour avec succès'}), 200
+    
+    medecin = medecins_collection.find_one({'email': email})
+    if medecin and verify_password(old_password, medecin['motDePasse']):
+        new_hashed_password = hash_password(new_password)
+        medecins_collection.update_one({'email': email}, {'$set': {'motDePasse': new_hashed_password}})
+        return jsonify({'msg': 'Mot de passe mis à jour avec succès'}), 200
+
+    return jsonify({'msg': 'Ancien mot de passe incorrect'}), 401
 
 if __name__ == '__main__':
     app.run(debug=True)

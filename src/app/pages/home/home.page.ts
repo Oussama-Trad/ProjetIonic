@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
-import { HttpErrorResponse } from '@angular/common/http';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { HeaderComponent } from '../../components/header/header.component';
 
 @Component({
   selector: 'app-home',
@@ -11,144 +14,72 @@ import { Router } from '@angular/router';
 })
 export class HomePage implements OnInit {
   user: any = {};
-  originalUser: any = {};
-  isEditing = false;
-  email: string = '';
-  changePassword = false;
+  isLoggedIn: boolean = false;
+  role: string | null = null;
+  isEditing: boolean = false;
+  changePassword: boolean = false;
   oldPassword: string = '';
   newPassword: string = '';
 
-  constructor(private authService: AuthService, private router: Router) {
-    console.log('Page Home (espace personnel patient) chargée');
-  }
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
-    this.email = localStorage.getItem('email') || '';
-    console.log('ngOnInit - Email récupéré depuis localStorage :', this.email);
-    if (this.email) {
-      this.loadUserData();
-    } else {
-      console.log('Aucun email trouvé dans localStorage, redirection vers /login');
-      this.router.navigate(['/login']);
+    this.refreshState();
+  }
+
+  refreshState() {
+    const email = localStorage.getItem('email');
+    this.role = localStorage.getItem('role');
+    this.isLoggedIn = !!email;
+    if (this.isLoggedIn && email) {
+      this.loadUserData(email);
     }
   }
 
-  loadUserData() {
-    console.log('Chargement des données pour l’email :', this.email);
-    this.authService.getUser(this.email).subscribe({
-      next: (response) => {
+  loadUserData(email: string) {
+    const fetchMethod = this.role === 'medecin' ? this.authService.getMedecin : this.authService.getUser;
+    fetchMethod(email).subscribe({
+      next: (response: any) => {
         this.user = response;
-        this.originalUser = { ...response };
-        console.log('Données utilisateur chargées avec succès :', this.user);
       },
-      error: (error: HttpErrorResponse) => {
-        console.error('Erreur lors du chargement des données utilisateur :', error);
-        alert('Erreur : ' + (error.error?.msg || 'Impossible de charger les données'));
-        localStorage.removeItem('email');
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        this.router.navigate(['/login']);
-      }
+      error: (err: any) => console.error('Erreur chargement données :', err)
     });
   }
 
   toggleEdit() {
     this.isEditing = !this.isEditing;
-    if (!this.isEditing) {
-      this.user = { ...this.originalUser };
-      this.changePassword = false;
-      this.oldPassword = '';
-      this.newPassword = '';
-    }
-    console.log('Mode édition basculé à :', this.isEditing);
   }
 
   togglePasswordFields() {
-    if (!this.changePassword) {
-      this.oldPassword = '';
-      this.newPassword = '';
-    }
-    console.log('Option changement de mot de passe :', this.changePassword);
+    // Rien à faire ici sauf si vous voulez ajouter une logique supplémentaire
   }
 
   saveChanges() {
-    console.log('Enregistrement des modifications, données actuelles :', this.user);
-    const updateData = { ...this.user, email: this.email };
-
-    if (this.changePassword && this.oldPassword && this.newPassword) {
-      updateData.oldPassword = this.oldPassword;
-      updateData.newPassword = this.newPassword;
-      console.log('Mise à jour du compte avec mot de passe :', updateData);
-      this.authService.updateUserAccount(updateData).subscribe({
-        next: (response: any) => {
-          console.log('Compte mis à jour avec succès :', response);
-          this.originalUser = { ...this.user };
-          if (response.access_token) {
-            localStorage.setItem('token', response.access_token);
-            localStorage.setItem('email', response.email);
-            this.email = response.email;
-          }
-          this.isEditing = false;
-          this.changePassword = false;
-          this.oldPassword = '';
-          this.newPassword = '';
-          alert('Compte mis à jour avec succès !');
-          this.loadUserData();
-        },
-        error: (error: HttpErrorResponse) => {
-          console.error('Erreur lors de la mise à jour du compte :', error.status, error.error);
-          alert('Erreur : ' + (error.error?.msg || 'Impossible de mettre à jour le compte'));
+    const updateMethod = this.role === 'medecin' ? this.authService.updateMedecinAccount : this.authService.updateUserAccount;
+    updateMethod(this.user).subscribe({
+      next: () => {
+        if (this.changePassword && this.oldPassword && this.newPassword) {
+          this.authService.changePassword(this.user.email, this.oldPassword, this.newPassword).subscribe({
+            next: () => alert('Mot de passe changé avec succès'),
+            error: (err) => alert('Erreur changement mot de passe : ' + (err.error?.msg || 'Échec'))
+          });
         }
-      });
-    } else {
-      console.log('Mise à jour du profil sans mot de passe :', updateData);
-      this.authService.updateUser(
-        this.email,
-        this.user.firstName,
-        this.user.lastName,
-        this.user.phoneNumber,
-        this.user.address,
-        this.user.birthDate,
-        this.user.gender,
-        this.user.profilePicture
-      ).subscribe({
-        next: (response) => {
-          console.log('Profil mis à jour avec succès :', response);
-          this.originalUser = { ...this.user };
-          this.isEditing = false;
-          this.changePassword = false;
-          this.oldPassword = '';
-          this.newPassword = '';
-          alert('Profil mis à jour avec succès !');
-        },
-        error: (error: HttpErrorResponse) => {
-          console.error('Erreur mise à jour :', error);
-          alert('Erreur : ' + (error.error?.msg || 'Mise à jour échouée'));
-        }
-      });
-    }
+        alert('Modifications enregistrées');
+        this.isEditing = false;
+      },
+      error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+    });
   }
 
   deleteAccount() {
     if (confirm('Voulez-vous vraiment supprimer votre compte ?')) {
-      this.authService.deleteUser(this.email).subscribe({
-        next: (response) => {
-          console.log('Compte supprimé :', response);
-          alert('Compte supprimé avec succès.');
-          localStorage.removeItem('email');
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          this.router.navigate(['/login']);
+      this.authService.deleteUser(this.user.email).subscribe({
+        next: () => {
+          this.authService.logout();
+          this.router.navigate(['/home']);
         },
-        error: (error: HttpErrorResponse) => {
-          console.error('Erreur suppression :', error);
-          alert('Erreur : ' + (error.error?.msg || 'Suppression échouée'));
-        }
+        error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
       });
     }
-  }
-
-  updateProfilePicture() {
-    // Géré par le header maintenant
   }
 }

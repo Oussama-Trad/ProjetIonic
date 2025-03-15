@@ -1,84 +1,62 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  standalone:false
+  standalone: false
 })
 export class HeaderComponent implements OnInit {
-  user: any = {};
   isLoggedIn: boolean = false;
+  user: any = {};
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
+    this.checkLoginStatus();
+  }
+
+  checkLoginStatus() {
     const email = localStorage.getItem('email');
-    const role = localStorage.getItem('role');
-    this.isLoggedIn = !!email && !!role;
-    if (this.isLoggedIn) {
-      this.loadUserData(email!, role!);
-    } else {
-      console.log('Pas connecté, header minimal');
+    this.isLoggedIn = !!email;
+    if (this.isLoggedIn && email) {
+      this.authService.getUser(email).subscribe({
+        next: (response: any) => (this.user = response),
+        error: (err: any) => console.error('Erreur chargement utilisateur :', err)
+      });
     }
   }
 
-  loadUserData(email: string, role: string) {
-    const serviceCall = role === 'medecin' ? this.authService.getMedecin(email) : this.authService.getUser(email);
-    serviceCall.subscribe({
-      next: (response) => {
-        this.user = response;
-        console.log('Données utilisateur chargées dans le header :', this.user);
-      },
-      error: (error) => {
-        console.error('Erreur chargement données header :', error);
-      }
-    });
-  }
-
   updateProfilePicture() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (event: any) => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = (event: any) => {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = () => {
-          const field = localStorage.getItem('role') === 'medecin' ? 'photoProfil' : 'profilePicture';
-          this.user[field] = reader.result as string;
-          const updateCall = localStorage.getItem('role') === 'medecin'
-            ? this.authService.updateMedecin(this.user)
-            : this.authService.updateUser(
-                this.user.email,
-                this.user.firstName,
-                this.user.lastName,
-                this.user.phoneNumber,
-                this.user.address,
-                this.user.birthDate,
-                this.user.gender,
-                this.user.profilePicture
-              );
-          updateCall.subscribe({
-            next: () => console.log('Photo mise à jour'),
-            error: (err) => console.error('Erreur mise à jour photo :', err)
+          const photoProfil = reader.result as string;
+          this.authService.updateUserAccount({ ...this.user, photoProfil }).subscribe({
+            next: () => this.checkLoginStatus(),
+            error: (err: any) => console.error('Erreur mise à jour photo :', err)
           });
         };
         reader.readAsDataURL(file);
       }
     };
-    input.click();
+    fileInput.click();
   }
 
   logout() {
-    this.authService.logout();
+    this.authService.logout(); // Appel direct sans .subscribe()
+    localStorage.clear(); // Déjà fait dans AuthService.logout(), mais conservé ici pour cohérence
     this.isLoggedIn = false;
     this.user = {};
-    this.router.navigate(['/accueil'], { replaceUrl: true });
-    console.log('Déconnexion réussie, redirection vers /accueil avec état réinitialisé');
-    // Forcer la mise à jour globale (optionnel si accueil.page écoute bien)
-    window.dispatchEvent(new Event('storage')); // Événement pour signaler le changement
+    this.router.navigate(['/login']);
   }
 }

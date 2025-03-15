@@ -1,20 +1,10 @@
-.welcome-card {
-    margin-top: 20px;
-  }
-  
-  .action-buttons {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .login-button {
-    --background: #3880ff;
-    --color: white;
-  }
-  
-  .register-button {
-    --border-color: #3880ff;
-    --color: #3880ff;
-  }
+.advertisement-card {
+  margin-top: 20px;
+  background: #3880ff;
+  color: white;
+}
+
+ion-tab-bar {
+  --background: #f4f5f8;
+  --color: #3880ff;
+}

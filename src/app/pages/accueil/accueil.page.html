@@ -1,33 +1,33 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card class="welcome-card">
+  <ion-card>
     <ion-card-header>
-      <ion-card-title>Bienvenue sur notre application</ion-card-title>
+      <ion-card-title>Bienvenue, {{ user.firstName }} {{ user.lastName }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <p>Gérez vos rendez-vous médicaux en toute simplicité.</p>
-      <p *ngIf="!isLoggedIn">Rejoignez-nous pour profiter de toutes nos fonctionnalités !</p>
-      <p *ngIf="isLoggedIn">Vous êtes déjà connecté, que souhaitez-vous faire ?</p>
+      <!-- Recherche de médecins -->
+      <ion-item>
+        <ion-label position="floating">Rechercher un médecin</ion-label>
+        <ion-input [(ngModel)]="searchQuery" (ionChange)="searchMedecins()"></ion-input>
+      </ion-item>
+      <ion-list>
+        <ion-item *ngFor="let medecin of filteredMedecins" (click)="bookRendezVous(medecin.email)">
+          <ion-avatar slot="start">
+            <img [src]="medecin.photoProfil" alt="Photo de profil">
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
+            <p>{{ medecin.specialite }} - {{ medecin.adresse }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <!-- Navigation -->
+      <ion-button expand="block" (click)="goToDocuments()">Mes documents</ion-button>
+      <ion-button expand="block" (click)="goToHistorique()">Mon historique médical</ion-button>
+      <ion-button expand="block" (click)="goToProfile()">Mon profil</ion-button>
     </ion-card-content>
   </ion-card>
-
-  <ion-button *ngIf="!isLoggedIn" expand="block" (click)="goToLogin()" class="login-button">
-    <ion-icon slot="start" name="log-in"></ion-icon>
-    Se connecter
-  </ion-button>
-  <ion-button *ngIf="!isLoggedIn" expand="block" fill="outline" (click)="goToRegister()" class="register-button">
-    <ion-icon slot="start" name="person-add"></ion-icon>
-    S'inscrire
-  </ion-button>
-
-  <ion-button *ngIf="isLoggedIn && role === 'patient'" expand="block" (click)="goToHome()">
-    Mon espace personnel
-  </ion-button>
-  <ion-button *ngIf="isLoggedIn && role === 'medecin'" expand="block" (click)="goToMedecin()">
-    Mon espace médecin
-  </ion-button>
-  <ion-button *ngIf="isLoggedIn" expand="block" (click)="goToRendezVous()">
-    Prendre un rendez-vous
-  </ion-button>
 </ion-content>
+<!-- Plus de <app-tabs> ici, car il est géré par TabsComponent -->

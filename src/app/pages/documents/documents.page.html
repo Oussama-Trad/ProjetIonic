@@ -1,0 +1,42 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button [defaultHref]="role === 'medecin' ? '/accueil-medecin' : '/accueil'"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mes Documents</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-content>
+      <!-- Envoi de document (patients uniquement) -->
+      <div *ngIf="role === 'patient'">
+        <ion-item>
+          <ion-label position="floating">Nom du document</ion-label>
+          <ion-input [(ngModel)]="nomDocument"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating">Email du médecin</ion-label>
+          <ion-input [(ngModel)]="medecinEmail"></ion-input>
+        </ion-item>
+        <ion-item>
+          <input type="file" (change)="onFileSelected($event)" accept=".pdf,.jpg,.png" />
+        </ion-item>
+        <ion-button expand="block" (click)="uploadDocument()" [disabled]="!selectedFile || !nomDocument || !medecinEmail">Envoyer</ion-button>
+      </div>
+
+      <!-- Liste des documents -->
+      <ion-list>
+        <ion-list-header>Documents</ion-list-header>
+        <ion-item *ngFor="let doc of documents">
+          <ion-label>
+            <h2>{{ doc.nom }}</h2>
+            <p>Statut : {{ doc.statut }} | Annotations : {{ doc.annotations || 'Aucune' }}</p>
+          </ion-label>
+          <ion-button *ngIf="role === 'medecin'" slot="end" (click)="annotateDocument(doc)">Annoter</ion-button>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -20,65 +21,42 @@ export class RegisterPage {
   gender: string = '';
   profilePicture: string = '';
 
-  constructor(private router: Router, private authService: AuthService) {
-    console.log('RegisterPage chargée');
+  constructor(private authService: AuthService, private router: Router) {}
+
+  goBackToHome() {
+    this.router.navigate(['/home']);
   }
 
-  uploadProfilePicture(event: any) {
+  uploadProfilePicture(event: any) { // Ajout de la méthode
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         this.profilePicture = reader.result as string;
-        console.log('Photo de profil chargée :', this.profilePicture);
       };
       reader.readAsDataURL(file);
     }
   }
 
   register() {
-    console.log('Inscription avec :', this.firstName, this.lastName, this.phoneNumber, this.email, this.password, this.birthDate, this.address, this.gender, this.profilePicture);
-
-    if (!this.profilePicture) {
-      alert('Veuillez ajouter une photo de profil !');
-      return;
-    }
-
-    this.authService.register(
-      this.firstName,
-      this.lastName,
-      this.phoneNumber,
-      this.email,
-      this.password,
-      this.birthDate,
-      this.address,
-      this.gender,
-      this.profilePicture
-    ).subscribe({
-      next: (response) => {
-        console.log('Réponse du backend :', response);
-        localStorage.setItem('email', response.email);
-        console.log('Email stocké après inscription :', localStorage.getItem('email'));
-        alert('Inscription réussie ! Connectez-vous.');
-        this.router.navigate(['/login']);
-      },
-      error: (error: HttpErrorResponse) => {
-        console.error('Erreur :', error);
-        alert('Erreur : ' + (error.error?.msg || 'Inscription échouée'));
-      }
-    });
-  }
-
-  goBackToHome() {
-    console.log('Clic sur le bouton Retour détecté dans RegisterPage');
-    const storedEmail = localStorage.getItem('email');
-    console.log('Email actuel dans localStorage :', storedEmail);
-    if (storedEmail) {
-      console.log('Email trouvé, navigation vers /home');
-      this.router.navigate(['/home']);
-    } else {
-      console.log('Pas d’email dans localStorage, redirection vers /login');
-      this.router.navigate(['/login']);
-    }
+    this.authService
+      .register(
+        this.firstName,
+        this.lastName,
+        this.phoneNumber,
+        this.email,
+        this.password,
+        this.birthDate,
+        this.address,
+        this.gender,
+        this.profilePicture
+      )
+      .subscribe({
+        next: () => {
+          alert('Inscription réussie');
+          this.router.navigate(['/login']);
+        },
+        error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+      });
   }
 }

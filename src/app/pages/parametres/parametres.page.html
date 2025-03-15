@@ -1,0 +1,38 @@
+<app-header></app-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Paramètres</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <!-- Mode clair/sombre -->
+        <ion-item>
+          <ion-label>Mode sombre</ion-label>
+          <ion-toggle [(ngModel)]="isDarkMode" (ionChange)="toggleDarkMode()"></ion-toggle>
+        </ion-item>
+
+        <!-- Notifications -->
+        <ion-item>
+          <ion-label>Notifications</ion-label>
+          <ion-toggle [(ngModel)]="notificationsEnabled" (ionChange)="toggleNotifications()"></ion-toggle>
+        </ion-item>
+
+        <!-- Langue -->
+        <ion-item>
+          <ion-label>Langue</ion-label>
+          <ion-select [(ngModel)]="language" (ionChange)="changeLanguage($event)">
+            <ion-select-option value="fr">Français</ion-select-option>
+            <ion-select-option value="en">English</ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ion-list>
+
+      <!-- Bouton de déconnexion -->
+      <ion-button expand="block" color="danger" (click)="logout()">Se déconnecter</ion-button>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
+
+<app-tabs></app-tabs>

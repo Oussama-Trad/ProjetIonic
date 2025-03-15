@@ -1,6 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { HeaderComponent } from '../../components/header/header.component';
 
 @Component({
   selector: 'app-accueil',
@@ -8,73 +12,62 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./accueil.page.scss'],
   standalone: false
 })
-export class AccueilPage implements OnInit, OnDestroy {
+export class AccueilPage implements OnInit {
   isLoggedIn: boolean = false;
   role: string | null = null;
-  user: any = {};
+  user: any = {}; // Ajout de la propriété user
+  searchQuery: string = '';
+  filteredMedecins: any[] = [];
 
-  constructor(private router: Router, private authService: AuthService) {
-    console.log('AccueilPage chargée');
-  }
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
     this.refreshState();
-    // Écouter les changements de localStorage (ex. déconnexion)
-    window.addEventListener('storage', this.refreshState.bind(this));
-  }
-
-  ngOnDestroy() {
-    // Nettoyer l’écouteur quand la page est détruite
-    window.removeEventListener('storage', this.refreshState.bind(this));
+    this.searchMedecins();
   }
 
   refreshState() {
     const email = localStorage.getItem('email');
     this.role = localStorage.getItem('role');
-    this.isLoggedIn = !!email && !!this.role;
-    console.log('Accueil - État mis à jour : Connecté =', this.isLoggedIn, 'Rôle =', this.role);
-    if (this.isLoggedIn) {
-      this.loadUserData(email!);
-    } else {
-      this.user = {}; // Réinitialiser user si déconnecté
+    this.isLoggedIn = !!email;
+    if (this.isLoggedIn && email) {
+      this.authService.getUser(email).subscribe({
+        next: (response: any) => (this.user = response),
+        error: (err) => console.error('Erreur chargement utilisateur :', err)
+      });
     }
   }
 
-  loadUserData(email: string) {
-    const serviceCall = this.role === 'medecin' ? this.authService.getMedecin(email) : this.authService.getUser(email);
-    serviceCall.subscribe({
-      next: (response) => {
-        this.user = response;
-        console.log('Données utilisateur chargées :', this.user);
+  searchMedecins() {
+    this.authService.getAllMedecins(this.searchQuery).subscribe({
+      next: (response: any) => {
+        this.filteredMedecins = response;
       },
-      error: (error) => {
-        console.error('Erreur chargement données utilisateur :', error);
-      }
+      error: (err) => console.error('Erreur recherche médecins :', err)
     });
   }
 
-  goToLogin() {
-    console.log('Clic sur bouton Connexion détecté');
-    this.router.navigate(['/login']);
-  }
-
-  goToRegister() {
-    console.log('Clic sur bouton Inscription détecté');
-    this.router.navigate(['/register']);
-  }
-
-  goToHome() {
-    console.log('Clic sur Mon espace personnel');
-    this.router.navigate(['/home']);
-  }
-
-  goToMedecin() {
-    console.log('Clic sur Mon espace médecin');
-    this.router.navigate(['/medecin']);
+  bookRendezVous(medecinEmail: string) {
+    if (!this.isLoggedIn) {
+      this.router.navigate(['/login']);
+    } else {
+      this.router.navigate(['/rendez-vous'], { queryParams: { medecinEmail } });
+    }
   }
 
   goToRendezVous() {
-    console.log('Clic sur Prendre un rendez-vous');
     this.router.navigate(['/rendez-vous']);
+  }
+
+  goToDocuments() { // Ajout de la méthode
+    this.router.navigate(['/documents']);
+  }
+
+  goToHistorique() { // Ajout de la méthode
+    this.router.navigate(['/historique']);
+  }
+
+  goToProfile() { // Ajout de la méthode
+    this.router.navigate(['/home']);
   }
 }

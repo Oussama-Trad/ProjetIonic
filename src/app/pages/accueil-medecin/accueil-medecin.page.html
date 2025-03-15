@@ -1,0 +1,46 @@
+<app-header></app-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Bienvenue, {{ medecin.prenom }} {{ medecin.nom }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <!-- Demandes de rendez-vous -->
+      <ion-list>
+        <ion-list-header>Demandes de rendez-vous</ion-list-header>
+        <ion-item *ngFor="let rdv of rendezVousDemandes">
+          <ion-label>
+            <h2>{{ rdv.patientId }}</h2>
+            <p>{{ rdv.date }} à {{ rdv.heure }} - {{ rdv.motif }}</p>
+          </ion-label>
+          <ion-button slot="end" (click)="manageRendezVous(rdv, 'accept')">Accepter</ion-button>
+          <ion-button slot="end" color="danger" (click)="manageRendezVous(rdv, 'reject')">Rejeter</ion-button>
+        </ion-item>
+      </ion-list>
+
+      <!-- Rendez-vous confirmés -->
+      <ion-list>
+        <ion-list-header>Rendez-vous confirmés</ion-list-header>
+        <ion-item *ngFor="let rdv of rendezVousConfirmes">
+          <ion-label>
+            <h2>{{ rdv.patientId }}</h2>
+            <p>{{ rdv.date }} à {{ rdv.heure }} - {{ rdv.motif }}</p>
+          </ion-label>
+          <ion-button slot="end" (click)="addConsultation(rdv)">Ajouter consultation</ion-button>
+          <ion-button slot="end" (click)="viewDocuments(rdv.patientId)">Documents</ion-button>
+          <ion-button slot="end" color="danger" (click)="cancelRendezVous(rdv)">Annuler</ion-button>
+        </ion-item>
+      </ion-list>
+
+      <!-- Calendrier (simplifié) -->
+      <ion-list>
+        <ion-list-header>Calendrier</ion-list-header>
+        <!-- À implémenter avec un composant calendrier tiers comme FullCalendar -->
+        <p>TODO: Intégrer un calendrier avec disponibilités en vert/rouge</p>
+      </ion-list>
+
+      <ion-button expand="block" (click)="goToProfile()">Gérer mon profil</ion-button>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

@@ -1,47 +1,35 @@
 import { Component } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
+import { IonicModule } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
-  standalone:false
+  standalone: false
 })
 export class LoginPage {
   email: string = '';
   password: string = '';
 
-  constructor(private authService: AuthService, private router: Router) {
-    console.log('LoginPage chargée');
-  }
+  constructor(private authService: AuthService, private router: Router) {}
 
   login() {
-    console.log('Tentative de connexion avec :', { email: this.email, password: this.password });
     this.authService.login(this.email, this.password).subscribe({
-      next: (response) => {
-        console.log('Réponse du serveur :', response);
-        localStorage.setItem('token', response.access_token);
-        localStorage.setItem('email', response.email);
+      next: (response: any) => {
+        localStorage.setItem('email', this.email);
+        localStorage.setItem('token', response.token);
         localStorage.setItem('role', response.role);
-        console.log('localStorage après connexion :', {
-          token: localStorage.getItem('token'),
-          email: localStorage.getItem('email'),
-          role: localStorage.getItem('role')
-        });
-        const redirectPath = response.role === 'medecin' ? '/medecin' : '/home';
-        this.router.navigate([redirectPath], { replaceUrl: true });
+        const redirect = response.role === 'medecin' ? '/accueil-medecin' : '/accueil';
+        this.router.navigate([redirect]);
       },
-      error: (error: HttpErrorResponse) => {
-        console.error('Erreur complète :', error);
-        alert('Erreur : ' + (error.error?.msg || 'Connexion échouée'));
-      }
+      error: (err) => alert('Erreur de connexion : ' + (err.error?.msg || 'Échec'))
     });
   }
 
-  goToRegister() {
-    console.log('Redirection vers /register');
+  goToRegister() { // Ajout de la méthode
     this.router.navigate(['/register']);
   }
 }

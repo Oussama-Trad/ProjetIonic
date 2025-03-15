@@ -1,0 +1,27 @@
+<ion-tabs>
+  <ion-tab-bar slot="bottom">
+    <!-- Onglet Accueil -->
+    <ion-tab-button [tab]="role === 'medecin' ? 'accueil-medecin' : 'accueil'">
+      <ion-icon name="home-outline"></ion-icon>
+      <ion-label>Accueil</ion-label>
+    </ion-tab-button>
+
+    <!-- Onglet Profil -->
+    <ion-tab-button [tab]="role === 'medecin' ? 'medecin' : 'home'">
+      <ion-icon name="person-outline"></ion-icon>
+      <ion-label>Profil</ion-label>
+    </ion-tab-button>
+
+    <!-- Onglet Médecins -->
+    <ion-tab-button [tab]="role === 'medecin' ? 'medecin' : 'medecin'">
+      <ion-icon name="medkit-outline"></ion-icon>
+      <ion-label>Médecins</ion-label>
+    </ion-tab-button>
+
+    <!-- Onglet Paramètres -->
+    <ion-tab-button tab="parametres">
+      <ion-icon name="settings-outline"></ion-icon>
+      <ion-label>Paramètres</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>

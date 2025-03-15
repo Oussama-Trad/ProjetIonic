@@ -1,12 +1,7 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Accueil Médecin</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
-  <app-header></app-header>
-  <ion-card *ngIf="isLoggedIn">
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
       <ion-card-title>Bienvenue, Dr. {{ medecin.prenom }} {{ medecin.nom }}</ion-card-title>
     </ion-card-header>
@@ -39,5 +34,16 @@
       </ion-list>
     </ion-card-content>
   </ion-card>
-  <ion-button *ngIf="!isLoggedIn" expand="block" (click)="goToLogin()">Se connecter</ion-button>
+
+  <ion-card *ngIf="!isLoggedIn || role !== 'medecin'">
+    <ion-card-header>
+      <ion-card-title>Accès refusé</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Cette page est réservée aux médecins.</p>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

@@ -1,16 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HeaderComponent } from '../../components/header/header.component';
 
 @Component({
   selector: 'app-accueil-medecin',
   templateUrl: './accueil-medecin.page.html',
   styleUrls: ['./accueil-medecin.page.scss'],
-  standalone: false,
- 
+  standalone:false
 })
 export class AccueilMedecinPage implements OnInit {
   medecin: any = {};
@@ -22,16 +18,18 @@ export class AccueilMedecinPage implements OnInit {
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
-    this.refreshState();
-  }
-
-  refreshState() {
-    const email = localStorage.getItem('email');
-    this.role = localStorage.getItem('role');
-    this.isLoggedIn = !!email && this.role === 'medecin';
-    if (this.isLoggedIn && email) {
-      this.loadMedecinData(email);
-    }
+    this.authService.isLoggedIn$.subscribe((loggedIn) => {
+      this.isLoggedIn = loggedIn;
+      this.role = localStorage.getItem('role');
+      if (loggedIn && this.role === 'medecin') {
+        const email = localStorage.getItem('email');
+        if (email) {
+          this.loadMedecinData(email);
+        }
+      } else if (this.role === 'patient') {
+        this.router.navigate(['/accueil']);
+      }
+    });
   }
 
   loadMedecinData(email: string) {
@@ -48,7 +46,6 @@ export class AccueilMedecinPage implements OnInit {
   manageRendezVous(rdv: any, action: 'accept' | 'reject') {
     this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, action).subscribe({
       next: () => {
-        console.log(`Rendez-vous ${action}é avec succès`);
         this.loadMedecinData(this.medecin.email);
       },
       error: (err: any) => console.error(`Erreur ${action} rendez-vous :`, err),
@@ -58,7 +55,6 @@ export class AccueilMedecinPage implements OnInit {
   cancelRendezVous(rdv: any) {
     this.authService.cancelRendezVous(this.medecin.email, rdv.userEmail, rdv.date, rdv.heure).subscribe({
       next: () => {
-        console.log('Rendez-vous annulé avec succès');
         this.loadMedecinData(this.medecin.email);
       },
       error: (err: any) => console.error('Erreur annulation rendez-vous :', err),
@@ -66,24 +62,13 @@ export class AccueilMedecinPage implements OnInit {
   }
 
   viewDocuments(userEmail: string) {
-    this.authService.getUser(userEmail).subscribe({
-      next: (user: any) => {
-        const docs = user.documents || [];
-        alert(`Documents de ${user.firstName} ${user.lastName}:\n${docs.map((d: any) => d.nom).join('\n')}`);
-      },
-      error: (err: any) => console.error('Erreur chargement documents :', err),
-    });
+    this.router.navigate(['/documents'], { queryParams: { patientId: userEmail } });
   }
 
   addConsultation(rdv: any) {
     this.router.navigate(['/consultation'], { queryParams: { userEmail: rdv.userEmail, date: rdv.date, heure: rdv.heure } });
   }
 
-  goToProfile() {
-    this.router.navigate(['/medecin']);
-  }
-
-  // Méthode publique pour naviguer vers la page de login
   goToLogin() {
     this.router.navigate(['/login']);
   }

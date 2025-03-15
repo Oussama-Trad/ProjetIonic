@@ -1,7 +1,7 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card *ngIf="isLoggedIn">
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
       <ion-card-title>Profil Médecin</ion-card-title>
     </ion-card-header>
@@ -42,11 +42,11 @@
         </ion-item>
         <ion-item *ngIf="isEditing && changePassword">
           <ion-label position="floating">Ancien mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword" placeholder="Entrez l’ancien mot de passe"></ion-input>
+          <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword"></ion-input>
         </ion-item>
         <ion-item *ngIf="isEditing && changePassword">
           <ion-label position="floating">Nouveau mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="newPassword" name="newPassword" placeholder="Entrez le nouveau mot de passe"></ion-input>
+          <ion-input type="password" [(ngModel)]="newPassword" name="newPassword"></ion-input>
         </ion-item>
       </ion-list>
 
@@ -56,13 +56,15 @@
     </ion-card-content>
   </ion-card>
 
-  <ion-card *ngIf="!isLoggedIn">
+  <ion-card *ngIf="!isLoggedIn || role !== 'medecin'">
     <ion-card-header>
-      <ion-card-title>Non connecté</ion-card-title>
+      <ion-card-title>Accès refusé</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <p>Veuillez vous connecter pour voir votre profil.</p>
-      <ion-button expand="block" routerLink="/login">Se connecter</ion-button>
+      <p>Cette page est réservée aux médecins.</p>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
     </ion-card-content>
   </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

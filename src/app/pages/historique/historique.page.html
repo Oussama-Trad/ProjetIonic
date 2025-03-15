@@ -1,17 +1,32 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Historique des Consultations</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-list>
-    <ion-item *ngFor="let consultation of historique">
-      <ion-label>
-        <h2>{{ consultation.date }} - {{ consultation.heure }}</h2>
-        <p>Diagnostics: {{ consultation.diagnostics.join(', ') }}</p>
-        <p>Prescriptions: {{ consultation.prescriptions.join(', ') }}</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
+  <ion-card *ngIf="isLoggedIn && role === 'patient'">
+    <ion-card-header>
+      <ion-card-title>Historique des Consultations</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let consultation of historique">
+          <ion-label>
+            <h2>{{ consultation.date }} - {{ consultation.heure }}</h2>
+            <p>Diagnostics: {{ consultation.diagnostics.join(', ') }}</p>
+            <p>Prescriptions: {{ consultation.prescriptions.join(', ') }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="!isLoggedIn || role !== 'patient'">
+    <ion-card-header>
+      <ion-card-title>Accès refusé</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Cette page est réservée aux patients connectés.</p>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

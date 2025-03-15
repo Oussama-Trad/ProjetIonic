@@ -1,4 +1,10 @@
-h1 {
-    color: #3880ff;
-    text-align: center;
-  }
+ion-card {
+  --background: var(--ion-item-background);
+  --color: var(--ion-text-color);
+}
+
+img {
+  max-width: 100px;
+  border-radius: 50%;
+  margin-top: 10px;
+}

@@ -35,3 +35,64 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+/* Styles globaux par défaut */
+/* Styles globaux par défaut */
+:root {
+    --ion-background-color: #fff;
+    --ion-text-color: #000;
+    --ion-toolbar-background: #f4f4f4;
+    --ion-toolbar-color: #333;
+    --ion-tab-bar-background: #f4f4f4;
+    --ion-tab-bar-color: #666;
+    --ion-tab-bar-color-selected: #3880ff;
+    --ion-item-background: #fff;
+    --ion-item-color: #000;
+  }
+  
+  /* Styles pour le dark mode */
+  body.dark {
+    --ion-background-color: #1a1a1a;
+    --ion-text-color: #fff;
+    --ion-toolbar-background: #2a2a2a;
+    --ion-toolbar-color: #fff;
+    --ion-tab-bar-background: #2a2a2a;
+    --ion-tab-bar-color: #999;
+    --ion-tab-bar-color-selected: #66b0ff;
+    --ion-item-background: #2a2a2a;
+    --ion-item-color: #fff;
+  
+    /* Appliquer aux éléments Ionic */
+    ion-content {
+      --background: var(--ion-background-color);
+      --color: var(--ion-text-color);
+    }
+  
+    ion-toolbar {
+      --background: var(--ion-toolbar-background);
+      --color: var(--ion-toolbar-color);
+    }
+  
+    ion-tab-bar {
+      --background: var(--ion-tab-bar-background);
+      --color: var(--ion-tab-bar-color);
+      --color-selected: var(--ion-tab-bar-color-selected);
+    }
+  
+    ion-tab-button {
+      --color: var(--ion-tab-bar-color);
+      --color-selected: var(--ion-tab-bar-color-selected);
+    }
+  
+    ion-item {
+      --background: var(--ion-item-background);
+      --color: var(--ion-item-color);
+    }
+  
+    ion-label {
+      color: var(--ion-text-color);
+    }
+  
+    ion-button {
+      --color: #fff; /* Boutons en blanc en dark mode */
+    }
+  }

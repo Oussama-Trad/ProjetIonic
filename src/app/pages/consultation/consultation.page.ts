@@ -1,7 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -9,10 +6,12 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-consultation',
   templateUrl: './consultation.page.html',
   styleUrls: ['./consultation.page.scss'],
-  standalone: false,
+  standalone:false
 })
 export class ConsultationPage implements OnInit {
-  userEmail: string | null = null; // Remplace patientId
+  isLoggedIn: boolean = false;
+  role: string | null = null;
+  userEmail: string | null = null;
   date: string | null = null;
   heure: string | null = null;
   diagnostics: string[] = [];
@@ -23,10 +22,18 @@ export class ConsultationPage implements OnInit {
   constructor(private route: ActivatedRoute, private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
-    this.userEmail = this.route.snapshot.queryParamMap.get('userEmail');
-    this.date = this.route.snapshot.queryParamMap.get('date');
-    this.heure = this.route.snapshot.queryParamMap.get('heure');
-    this.loadConsultation();
+    this.authService.isLoggedIn$.subscribe((loggedIn) => {
+      this.isLoggedIn = loggedIn;
+      this.role = localStorage.getItem('role');
+      if (loggedIn && this.role === 'medecin') {
+        this.userEmail = this.route.snapshot.queryParamMap.get('userEmail');
+        this.date = this.route.snapshot.queryParamMap.get('date');
+        this.heure = this.route.snapshot.queryParamMap.get('heure');
+        this.loadConsultation();
+      } else if (this.role === 'patient') {
+        this.router.navigate(['/accueil']);
+      }
+    });
   }
 
   loadConsultation() {
@@ -74,5 +81,9 @@ export class ConsultationPage implements OnInit {
       },
       error: (err: any) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
     });
+  }
+
+  goToLogin() {
+    this.router.navigate(['/login']);
   }
 }

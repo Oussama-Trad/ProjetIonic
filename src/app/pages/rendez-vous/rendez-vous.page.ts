@@ -6,13 +6,13 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-rendez-vous',
   templateUrl: './rendez-vous.page.html',
   styleUrls: ['./rendez-vous.page.scss'],
-  standalone : false
+  standalone: false
 })
 export class RendezVousPage implements OnInit {
   medecin: any = {};
-  currentMonth: Date = new Date(); // Mois actuel
+  currentMonth: Date = new Date();
   calendarDays: { date: Date; isAvailable: boolean; isToday: boolean }[] = [];
-  selectedDay: Date | null = null;
+  selectedDay: string | null = null; // Changé en string pour correspondre à toISOString().split('T')[0]
   selectedHeure: string = '';
 
   constructor(
@@ -27,7 +27,7 @@ export class RendezVousPage implements OnInit {
       this.loadMedecinData(medecinEmail);
     } else {
       console.error('Aucun email de médecin fourni dans les paramètres');
-      this.router.navigate(['/login']);
+      this.router.navigate(['/accueil']); // Redirection vers accueil si pas d'email
     }
     this.checkAuth();
   }
@@ -45,7 +45,6 @@ export class RendezVousPage implements OnInit {
       next: (response: any) => {
         this.medecin = response;
         console.log('Données du médecin chargées :', this.medecin);
-        console.log('Rendez-vous demandés :', this.medecin.rendezVousDemandes); // Ajoute ceci
         this.loadCalendar();
       },
       error: (err: any) => {
@@ -81,8 +80,8 @@ export class RendezVousPage implements OnInit {
     const dayOfWeek = date.getDay(); // 0 = dimanche, 1 = lundi, ..., 6 = samedi
     if (dayOfWeek === 0 || dayOfWeek === 6) return false; // Week-end
 
-    const heuresPossibles = this.generateAvailableSlots(date);
     const dateStr = date.toISOString().split('T')[0];
+    const heuresPossibles = this.generateAvailableSlots(date);
     const rdvConflicts = (this.medecin.rendezVousConfirmes || [])
       .concat(this.medecin.rendezVousDemandes || [])
       .filter((rdv: any) => rdv.date === dateStr && ['accepté', 'en attente'].includes(rdv.statut));
@@ -111,7 +110,7 @@ export class RendezVousPage implements OnInit {
 
   selectDay(day: { date: Date; isAvailable: boolean; isToday: boolean }) {
     if (day.isAvailable) {
-      this.selectedDay = day.date;
+      this.selectedDay = day.date.toISOString().split('T')[0]; // Stocker la date au format ISO
       this.selectedHeure = '';
       console.log('Jour sélectionné :', this.selectedDay);
     }
@@ -119,22 +118,25 @@ export class RendezVousPage implements OnInit {
 
   getHoursForSelectedDay(): { heure: string; disponible: boolean }[] {
     if (!this.selectedDay) return [];
-    const dateStr = this.selectedDay.toISOString().split('T')[0];
-    const heuresPossibles = this.generateAvailableSlots(this.selectedDay);
+    const heuresPossibles = this.generateAvailableSlots(new Date(this.selectedDay));
     return heuresPossibles.map(heure => ({
       heure,
-      disponible: this.isSlotAvailable(dateStr, heure)
+      disponible: this.isSlotAvailable(this.selectedDay!, heure)
     }));
   }
 
   previousMonth() {
     this.currentMonth = new Date(this.currentMonth.setMonth(this.currentMonth.getMonth() - 1));
     this.loadCalendar();
+    this.selectedDay = null;
+    this.selectedHeure = '';
   }
 
   nextMonth() {
     this.currentMonth = new Date(this.currentMonth.setMonth(this.currentMonth.getMonth() + 1));
     this.loadCalendar();
+    this.selectedDay = null;
+    this.selectedHeure = '';
   }
 
   createRendezVous() {
@@ -150,13 +152,12 @@ export class RendezVousPage implements OnInit {
       return;
     }
 
-    const dateStr = this.selectedDay.toISOString().split('T')[0];
     const rdvData = {
       medecinEmail: this.medecin.email,
       userEmail,
-      date: dateStr,
+      date: this.selectedDay,
       heure: this.selectedHeure,
-      motif: 'Consultation générale' // Valeur par défaut, personnalisable si besoin
+      motif: 'Consultation générale'
     };
 
     this.authService.createRendezVous(rdvData).subscribe({

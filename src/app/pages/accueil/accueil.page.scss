@@ -1,10 +1,5 @@
-.advertisement-card {
-  margin-top: 20px;
-  background: #3880ff;
-  color: white;
-}
-
-ion-tab-bar {
-  --background: #f4f5f8;
-  --color: #3880ff;
+ion-item {
+  cursor: pointer;
+  --background: #fff;
+  --background-hover: #f0f0f0; /* Effet au survol pour indiquer que c'est cliquable */
 }

@@ -1,17 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms'; // Pour ngModel
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-documents',
   templateUrl: './documents.page.html',
   styleUrls: ['./documents.page.scss'],
-  standalone: false,
+  standalone:false
 })
 export class DocumentsPage implements OnInit {
+  isLoggedIn: boolean = false;
   role: string | null = null;
   userEmail: string = '';
   patientId: string | null = null;
@@ -20,13 +18,18 @@ export class DocumentsPage implements OnInit {
   nomDocument: string = '';
   medecinEmail: string = '';
 
-  constructor(private route: ActivatedRoute, private authService: AuthService) {}
+  constructor(private route: ActivatedRoute, private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
-    this.role = localStorage.getItem('role');
-    this.userEmail = localStorage.getItem('email') || '';
-    this.patientId = this.route.snapshot.queryParamMap.get('patientId');
-    this.loadDocuments();
+    this.authService.isLoggedIn$.subscribe((loggedIn) => {
+      this.isLoggedIn = loggedIn;
+      this.role = localStorage.getItem('role');
+      this.userEmail = localStorage.getItem('email') || '';
+      this.patientId = this.route.snapshot.queryParamMap.get('patientId');
+      if (this.isLoggedIn) {
+        this.loadDocuments();
+      }
+    });
   }
 
   loadDocuments() {
@@ -79,15 +82,19 @@ export class DocumentsPage implements OnInit {
       doc.statut = 'consulté';
       this.authService.getUser(this.patientId!).subscribe({
         next: (user: any) => {
-          const updatedDocs = user.documents.map((d: any) => 
+          const updatedDocs = user.documents.map((d: any) =>
             d.nom === doc.nom ? { ...d, annotations: annotation, statut: 'consulté' } : d
           );
           this.authService.updateUserAccount({ ...user, documents: updatedDocs }).subscribe({
-            next: () => console.log('Annotation mise à jour'),
+            next: () => this.loadDocuments(),
             error: (err: any) => console.error('Erreur mise à jour annotation :', err)
           });
         }
       });
     }
+  }
+
+  goToLogin() {
+    this.router.navigate(['/login']);
   }
 }

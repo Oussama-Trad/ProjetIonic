@@ -1,58 +1,63 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card *ngIf="isLoggedIn">
+  <ion-card *ngIf="isLoggedIn && role === 'patient'">
     <ion-card-header>
-      <ion-card-title>Profil {{ role === 'medecin' ? 'Médecin' : 'Patient' }}</ion-card-title>
+      <ion-card-title>Mon Profil</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list>
+      <ion-item *ngIf="!isEditing">
+        <ion-avatar slot="start">
+          <img [src]="user.photoProfil || user.profilePicture || 'assets/default-avatar.png'" alt="Photo de profil">
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ user.firstName }} {{ user.lastName }}</h2>
+          <p>{{ user.email }}</p>
+        </ion-label>
+        <ion-button slot="end" (click)="toggleEdit()">Modifier</ion-button>
+      </ion-item>
+
+      <form *ngIf="isEditing" (ngSubmit)="saveProfile()">
         <ion-item>
-          <ion-avatar slot="start">
-            <img [src]="user.profilePicture || 'assets/default-profile.png'" alt="Photo de profil">
-          </ion-avatar>
-          <ion-label>
-            <h2>{{ user.firstName }} {{ user.lastName }}</h2>
-            <p>{{ user.email }}</p>
-          </ion-label>
+          <ion-label position="floating">Prénom</ion-label>
+          <ion-input [(ngModel)]="user.firstName" name="firstName" required></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label>Téléphone</ion-label>
-          <ion-input [(ngModel)]="user.phoneNumber" [disabled]="!isEditing"></ion-input>
+          <ion-label position="floating">Nom</ion-label>
+          <ion-input [(ngModel)]="user.lastName" name="lastName" required></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label>Adresse</ion-label>
-          <ion-input [(ngModel)]="user.address" [disabled]="!isEditing"></ion-input>
+          <ion-label position="floating">Numéro de téléphone</ion-label>
+          <ion-input [(ngModel)]="user.phoneNumber" name="phoneNumber" type="tel"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label>Date de naissance</ion-label>
-          <ion-input [(ngModel)]="user.birthDate" [disabled]="!isEditing"></ion-input>
+          <ion-label position="floating">Email</ion-label>
+          <ion-input [(ngModel)]="user.email" name="email" type="email" required disabled></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating">Date de naissance</ion-label>
+          <ion-input [(ngModel)]="user.birthDate" name="birthDate" type="date"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating">Adresse</ion-label>
+          <ion-input [(ngModel)]="user.address" name="address"></ion-input>
         </ion-item>
         <ion-item>
           <ion-label>Genre</ion-label>
-          <ion-input [(ngModel)]="user.gender" [disabled]="!isEditing"></ion-input>
+          <ion-select [(ngModel)]="user.gender" name="gender">
+            <ion-select-option value="Homme">Homme</ion-select-option>
+            <ion-select-option value="Femme">Femme</ion-select-option>
+            <ion-select-option value="Autre">Autre</ion-select-option>
+          </ion-select>
         </ion-item>
-        <ion-item *ngIf="role === 'medecin'">
-          <ion-label>Spécialité</ion-label>
-          <ion-input [(ngModel)]="user.specialite" [disabled]="!isEditing"></ion-input>
+        <ion-item>
+          <ion-label>Photo de profil</ion-label>
+          <input type="file" (change)="onFileChange($event)" accept="image/*">
+          <img [src]="photoPreview || user.photoProfil || user.profilePicture || 'assets/default-avatar.png'" alt="Aperçu" style="max-width: 100px;">
         </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label>Changer le mot de passe</ion-label>
-          <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>
-        </ion-item>
-        <ion-item *ngIf="isEditing && changePassword">
-          <ion-label position="floating">Ancien mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword" placeholder="Entrez l’ancien mot de passe"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="isEditing && changePassword">
-          <ion-label position="floating">Nouveau mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="newPassword" name="newPassword" placeholder="Entrez le nouveau mot de passe"></ion-input>
-        </ion-item>
-      </ion-list>
-
-      <ion-button expand="block" (click)="toggleEdit()" *ngIf="!isEditing">Modifier</ion-button>
-      <ion-button expand="block" (click)="saveChanges()" *ngIf="isEditing">Sauvegarder</ion-button>
-      <ion-button expand="block" color="danger" (click)="deleteAccount()">Supprimer le compte</ion-button>
+        <ion-button type="submit" expand="block">Enregistrer</ion-button>
+        <ion-button color="light" expand="block" (click)="toggleEdit()">Annuler</ion-button>
+      </form>
     </ion-card-content>
   </ion-card>
 
@@ -62,7 +67,9 @@
     </ion-card-header>
     <ion-card-content>
       <p>Veuillez vous connecter pour voir votre profil.</p>
-      <ion-button expand="block" routerLink="/login">Se connecter</ion-button>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
     </ion-card-content>
   </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

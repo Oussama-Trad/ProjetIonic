@@ -1,6 +1,22 @@
-[color-theme='dark'] {
-    --ion-background-color: #121212;
-    --ion-text-color: #ffffff;
-    --ion-card-background: #1e1e1e;
-    --ion-card-color: #ffffff;
+// Style par défaut
+ion-content {
+  --background: #fff;
+  --color: #000;
+}
+
+// Style pour le dark mode
+body.dark {
+  ion-content {
+    --background: #1a1a1a;
+    --color: #fff;
   }
+
+  ion-item {
+    --background: #2a2a2a;
+    --color: #fff;
+  }
+
+  ion-label {
+    color: #fff;
+  }
+}

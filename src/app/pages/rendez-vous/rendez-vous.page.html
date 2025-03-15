@@ -20,7 +20,7 @@
              'available': day.isAvailable,
              'unavailable': !day.isAvailable,
              'today': day.isToday,
-             'selected': selectedDay === day.date
+             'selected': selectedDay === day.date.toISOString().split('T')[0]
            }"
            (click)="selectDay(day)">
         {{ day.date.getDate() }}

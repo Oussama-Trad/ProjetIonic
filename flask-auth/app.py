@@ -72,6 +72,107 @@ def handle_options(path):
     response.headers['Access-Control-Max-Age'] = '86400'
     return response
 
+# Inscription
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
+        print(f"Email déjà utilisé: {email}")
+        return jsonify({'msg': 'Email déjà utilisé'}), 400
+    
+    hashed_password = hash_password(data['password'])
+    user_data = {
+        'id': str(ObjectId()),
+        'firstName': data['firstName'],
+        'lastName': data['lastName'],
+        'phoneNumber': data['phoneNumber'],
+        'email': email,
+        'password': hashed_password,
+        'birthDate': data['birthDate'],
+        'address': data['address'],
+        'gender': data['gender'],
+        'profilePicture': data.get('profilePicture', ''),
+        'rendezVousFuturs': [],
+        'historiqueRendezVous': [],
+        'documents': [],
+        'notifications': [],
+        'createdAt': datetime.utcnow(),
+        'settings': {'darkMode': False, 'language': 'fr'}  # Ajout des paramètres
+    }
+    users_collection.insert_one(user_data)
+    print(f"Utilisateur enregistré: {email}")
+    return jsonify({'email': email}), 201
+
+# Connexion
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    print(f"Tentative de connexion avec email: {email}")
+    
+    medecin = medecins_collection.find_one({'email': email})
+    if medecin and verify_password(password, medecin['motDePasse']):
+        token = jwt.encode({'sub': email, 'email': email, 'role': 'medecin', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
+        print(f"Token généré pour médecin: {token}")
+        return jsonify({'access_token': token, 'email': email, 'role': 'medecin'}), 200
+
+    user = users_collection.find_one({'email': email})
+    if user and verify_password(password, user['password']):
+        token = jwt.encode({'sub': email, 'email': email, 'role': 'patient', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
+        print(f"Token généré pour utilisateur: {token}")
+        return jsonify({'access_token': token, 'email': email, 'role': 'patient'}), 200
+
+    print(f"Aucun utilisateur ou médecin trouvé avec cet email ou mot de passe incorrect: {email}")
+    return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
+
+# Récupérer un utilisateur
+@app.route('/api/user', methods=['GET'])
+@jwt_required()
+def get_user():
+    email = request.args.get('email')
+    identity = get_jwt_identity()
+    if identity != email:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    user = users_collection.find_one({'email': email}, {'_id': 0, 'password': 0})
+    if user:
+        print(f"Utilisateur trouvé: {email}")
+        return jsonify(user), 200
+    print(f"Utilisateur non trouvé: {email}")
+    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+# Récupérer un médecin
+@app.route('/api/medecin', methods=['GET'])
+@jwt_required()
+def get_medecin():
+    email = request.args.get('email')
+    identity = get_jwt_identity()
+    if identity != email:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
+    if medecin:
+        print(f"Médecin trouvé: {email}")
+        return jsonify(medecin), 200
+    print(f"Médecin non trouvé: {email}")
+    return jsonify({'msg': 'Médecin non trouvé'}), 404
+
+# Liste des médecins (publique)
+@app.route('/api/medecins', methods=['GET'])
+def get_all_medecins():
+    search_query = request.args.get('search', '')
+    medecins = medecins_collection.find({
+        '$or': [
+            {'prenom': {'$regex': search_query, '$options': 'i'}},
+            {'nom': {'$regex': search_query, '$options': 'i'}},
+            {'specialite': {'$regex': search_query, '$options': 'i'}}
+        ]
+    }, {'_id': 0, 'motDePasse': 0})
+    medecins_list = list(medecins)
+    print(f"Liste des médecins trouvés: {len(medecins_list)} résultats pour recherche '{search_query}'")
+    return jsonify(medecins_list), 200
+
+# Créer un rendez-vous
 @app.route('/api/rendezvous', methods=['POST'])
 @jwt_required()
 def create_rendezvous():
@@ -121,11 +222,6 @@ def create_rendezvous():
         print(f"Médecin non trouvé: {medecin_email}")
         return jsonify({'msg': 'Médecin non trouvé'}), 404
 
-    # Vérification du type de medecin pour éviter l'erreur 'str'
-    if not isinstance(medecin, dict):
-        print(f"Erreur: medecin n'est pas un dictionnaire, valeur: {medecin}")
-        return jsonify({'msg': 'Erreur interne: données médecin invalides'}), 500
-
     try:
         parsed_date = datetime.strptime(date, '%Y-%m-%d')
         day_of_week = parsed_date.weekday()
@@ -147,7 +243,6 @@ def create_rendezvous():
         print(f"Erreur de format d'heure: {heure}, erreur: {str(e)}")
         return jsonify({'msg': 'Format d’heure invalide'}), 400
 
-    # Gestion sécurisée des conflits
     rdv_conflicts = medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', [])
     print(f"Vérification des conflits pour {date} {heure}: {rdv_conflicts}")
     if any(isinstance(rdv, dict) and rdv.get('date') == date and rdv.get('heure') == heure and rdv.get('statut') in ['accepté', 'en attente'] for rdv in rdv_conflicts):
@@ -178,95 +273,154 @@ def create_rendezvous():
         print(f"Erreur lors de l'insertion dans MongoDB: {str(e)}")
         raise e
 
-# Inclure les autres routes ici (non modifiées pour brièveté)
-@app.route('/api/register', methods=['POST'])
-def register():
+# Gérer les rendez-vous (accepter ou annuler)
+@app.route('/api/medecin/rendezvous/<action>', methods=['PUT'])
+@jwt_required()
+def manage_rendezvous(action):
+    email = get_jwt_identity()
     data = request.get_json()
-    email = data.get('email')
-    if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
-        print(f"Email déjà utilisé: {email}")
-        return jsonify({'msg': 'Email déjà utilisé'}), 400
-    
-    hashed_password = hash_password(data['password'])
-    user_data = {
-        'id': str(ObjectId()),
-        'firstName': data['firstName'],
-        'lastName': data['lastName'],
-        'phoneNumber': data['phoneNumber'],
-        'email': email,
-        'password': hashed_password,
-        'birthDate': data['birthDate'],
-        'address': data['address'],
-        'gender': data['gender'],
-        'profilePicture': data.get('profilePicture', ''),
-        'rendezVousFuturs': [],
-        'historiqueRendezVous': [],
-        'documents': [],
-        'notifications': [],
-        'createdAt': datetime.utcnow()
-    }
-    users_collection.insert_one(user_data)
-    print(f"Utilisateur enregistré: {email}")
-    return jsonify({'email': email}), 201
+    user_email = data.get('userEmail')
+    date = data.get('date')
+    heure = data.get('heure')
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-    print(f"Tentative de connexion avec email: {email}")
-    
     medecin = medecins_collection.find_one({'email': email})
-    if medecin and verify_password(password, medecin['motDePasse']):
-        token = jwt.encode({'sub': email, 'email': email, 'role': 'medecin', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
-        print(f"Token généré pour médecin: {token}")
-        return jsonify({'access_token': token, 'email': email, 'role': 'medecin'}), 200
+    if not medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    if medecin.get('role') != 'medecin':
+        return jsonify({'msg': 'Accès réservé aux médecins'}), 403
 
+    rdv = next((r for r in medecin.get('rendezVousDemandes', []) if r['userEmail'] == user_email and r['date'] == date and r['heure'] == heure), None)
+    if not rdv:
+        return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
+
+    if action == 'accept':
+        medecins_collection.update_one(
+            {'email': email},
+            {
+                '$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}},
+                '$push': {'rendezVousConfirmes': {**rdv, 'statut': 'accepté'}}
+            }
+        )
+        users_collection.update_one(
+            {'email': user_email},
+            {
+                '$set': {'rendezVousFuturs.$[elem].statut': 'accepté'},
+                '$push': {
+                    'notifications': {
+                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été accepté',
+                        'date': datetime.utcnow().isoformat(),
+                        'lue': False
+                    }
+                }
+            },
+            array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
+        )
+        return jsonify({'msg': 'Rendez-vous accepté'}), 200
+    elif action == 'cancel':
+        medecins_collection.update_one(
+            {'email': email},
+            {'$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}}}
+        )
+        users_collection.update_one(
+            {'email': user_email},
+            {
+                '$set': {'rendezVousFuturs.$[elem].statut': 'annulé'},
+                '$push': {
+                    'notifications': {
+                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été annulé',
+                        'date': datetime.utcnow().isoformat(),
+                        'lue': False
+                    }
+                }
+            },
+            array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
+        )
+        return jsonify({'msg': 'Rendez-vous annulé'}), 200
+    return jsonify({'msg': 'Action non reconnue'}), 400
+
+# Téléverser un document
+@app.route('/api/user/document', methods=['POST'])
+@jwt_required()
+def upload_document():
+    email = get_jwt_identity()
+    data = request.get_json()
+    nom = data.get('nom')
+    url = data.get('url')
+    medecin_email = data.get('medecinEmail')
+
+    document = {'nom': nom, 'url': url, 'medecinEmail': medecin_email, 'timestamp': datetime.utcnow().isoformat()}
+    users_collection.update_one(
+        {'email': email},
+        {'$push': {'documents': document}}
+    )
+    medecins_collection.update_one(
+        {'email': medecin_email},
+        {
+            '$push': {
+                'notifications': {
+                    'message': f"{email} vous a envoyé le document '{nom}'",
+                    'date': datetime.utcnow().isoformat(),
+                    'lue': False
+                }
+            }
+        }
+    )
+    return jsonify({'msg': 'Document téléversé'}), 201
+
+# Mettre à jour les paramètres (Corrigé)
+@app.route('/api/user/settings', methods=['PUT'])
+@jwt_required()
+def update_settings():
+    email = get_jwt_identity()
+    data = request.get_json()
+    print(f"Requête reçue pour /api/user/settings avec données: {data}, identité: {email}")
+
+    # Validation des données reçues
+    if not isinstance(data, dict):
+        print(f"Données invalides reçues: {data}")
+        return jsonify({'msg': 'Les données doivent être un objet JSON valide'}), 400
+
+    # Récupération des paramètres avec valeurs par défaut
+    dark_mode = data.get('darkMode')
+    language = data.get('language')
+    if dark_mode is None or language is None:
+        print(f"Paramètres manquants: darkMode={dark_mode}, language={language}")
+        return jsonify({'msg': 'Les paramètres darkMode et language sont requis'}), 400
+
+    # Validation des types
+    if not isinstance(dark_mode, bool):
+        print(f"darkMode doit être un booléen, reçu: {dark_mode}")
+        return jsonify({'msg': 'darkMode doit être un booléen'}), 400
+    if not isinstance(language, str) or language not in ['fr', 'en', 'es']:
+        print(f"language doit être une chaîne valide (fr, en, es), reçu: {language}")
+        return jsonify({'msg': 'language doit être fr, en ou es'}), 400
+
+    settings = {'darkMode': dark_mode, 'language': language}
+    print(f"Paramètres à mettre à jour: {settings}")
+
+    # Mise à jour dans la base de données
     user = users_collection.find_one({'email': email})
-    if user and verify_password(password, user['password']):
-        token = jwt.encode({'sub': email, 'email': email, 'role': 'patient', 'exp': datetime.utcnow() + timedelta(hours=24)}, app.config['JWT_SECRET_KEY'])
-        print(f"Token généré pour utilisateur: {token}")
-        return jsonify({'access_token': token, 'email': email, 'role': 'patient'}), 200
-
-    print(f"Aucun utilisateur ou médecin trouvé avec cet email ou mot de passe incorrect: {email}")
-    return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
-
-@app.route('/api/user', methods=['GET'])
-@jwt_required()
-def get_user():
-    email = request.args.get('email')
-    user = users_collection.find_one({'email': email}, {'_id': 0, 'password': 0})
     if user:
-        print(f"Utilisateur trouvé: {email}")
-        return jsonify(user), 200
-    print(f"Utilisateur non trouvé: {email}")
-    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+        result = users_collection.update_one({'email': email}, {'$set': {'settings': settings}})
+        if result.modified_count > 0:
+            print(f"Paramètres mis à jour pour l'utilisateur {email}: {settings}")
+            return jsonify({'msg': 'Paramètres mis à jour', 'settings': settings}), 200
+        else:
+            print(f"Aucune modification détectée pour l'utilisateur {email}")
+            return jsonify({'msg': 'Aucune modification nécessaire', 'settings': settings}), 200
 
-@app.route('/api/medecin', methods=['GET'])
-@jwt_required()
-def get_medecin():
-    email = request.args.get('email')
-    medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
+    medecin = medecins_collection.find_one({'email': email})
     if medecin:
-        print(f"Médecin trouvé: {email}")
-        return jsonify(medecin), 200
-    print(f"Médecin non trouvé: {email}")
-    return jsonify({'msg': 'Médecin non trouvé'}), 404
+        result = medecins_collection.update_one({'email': email}, {'$set': {'settings': settings}})
+        if result.modified_count > 0:
+            print(f"Paramètres mis à jour pour le médecin {email}: {settings}")
+            return jsonify({'msg': 'Paramètres mis à jour', 'settings': settings}), 200
+        else:
+            print(f"Aucune modification détectée pour le médecin {email}")
+            return jsonify({'msg': 'Aucune modification nécessaire', 'settings': settings}), 200
 
-@app.route('/api/medecins', methods=['GET'])
-@jwt_required()
-def get_all_medecins():
-    search_query = request.args.get('search', '')
-    medecins = medecins_collection.find({
-        '$or': [
-            {'prenom': {'$regex': search_query, '$options': 'i'}},
-            {'nom': {'$regex': search_query, '$options': 'i'}},
-            {'specialite': {'$regex': search_query, '$options': 'i'}}
-        ]
-    }, {'_id': 0, 'motDePasse': 0})
-    medecins_list = list(medecins)
-    print(f"Liste des médecins trouvés: {len(medecins_list)} résultats pour recherche '{search_query}'")
-    return jsonify(medecins_list), 200
+    print(f"Utilisateur ou médecin non trouvé pour mise à jour des paramètres: {email}")
+    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

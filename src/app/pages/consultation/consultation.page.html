@@ -1,19 +1,11 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/accueil-medecin"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Consultation</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
       <ion-card-title>Consultation pour {{ userEmail }} - {{ date }} {{ heure }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <!-- Diagnostics -->
       <ion-list>
         <ion-list-header>Diagnostics</ion-list-header>
         <ion-item *ngFor="let diag of diagnostics">
@@ -26,7 +18,6 @@
         </ion-item>
       </ion-list>
 
-      <!-- Prescriptions -->
       <ion-list>
         <ion-list-header>Prescriptions</ion-list-header>
         <ion-item *ngFor="let presc of prescriptions">
@@ -42,4 +33,16 @@
       <ion-button expand="block" (click)="saveConsultation()">Enregistrer</ion-button>
     </ion-card-content>
   </ion-card>
+
+  <ion-card *ngIf="!isLoggedIn || role !== 'medecin'">
+    <ion-card-header>
+      <ion-card-title>Accès refusé</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Cette page est réservée aux médecins.</p>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

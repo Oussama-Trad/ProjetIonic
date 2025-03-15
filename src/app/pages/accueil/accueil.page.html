@@ -1,20 +1,32 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
+  <ion-card class="advertisement">
     <ion-card-header>
-      <ion-card-title>Bienvenue, {{ user.firstName }} {{ user.lastName }}</ion-card-title>
+      <ion-card-title>Publicité</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <!-- Recherche de médecins -->
-      <ion-item>
-        <ion-label position="floating">Rechercher un médecin</ion-label>
-        <ion-input [(ngModel)]="searchQuery" (ionChange)="searchMedecins()"></ion-input>
+      <img src="https://via.placeholder.com/300x100" alt="Publicité" />
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Bienvenue, {{ user.firstName || 'Utilisateur' }} {{ user.lastName || '' }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item *ngIf="!isLoggedIn">
+        <ion-label>Veuillez vous connecter pour voir les médecins</ion-label>
+        <ion-button slot="end" (click)="goToLogin()">Connexion</ion-button>
       </ion-item>
-      <ion-list>
-        <ion-item *ngFor="let medecin of filteredMedecins" (click)="bookRendezVous(medecin.email)">
+      <ion-item *ngIf="isLoggedIn && role === 'patient'">
+        <ion-label position="floating">Rechercher un médecin</ion-label>
+        <ion-input [(ngModel)]="searchQuery" (ionInput)="searchMedecins()" placeholder="Nom ou spécialité"></ion-input>
+      </ion-item>
+      <ion-list *ngIf="isLoggedIn && role === 'patient'">
+        <ion-item *ngFor="let medecin of filteredMedecins" (click)="bookRendezVous(medecin.email)" button>
           <ion-avatar slot="start">
-            <img [src]="medecin.photoProfil" alt="Photo de profil">
+            <img [src]="medecin.photoProfil || 'https://via.placeholder.com/40'" alt="Photo de profil">
           </ion-avatar>
           <ion-label>
             <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
@@ -22,12 +34,11 @@
           </ion-label>
         </ion-item>
       </ion-list>
-
-      <!-- Navigation -->
-      <ion-button expand="block" (click)="goToDocuments()">Mes documents</ion-button>
-      <ion-button expand="block" (click)="goToHistorique()">Mon historique médical</ion-button>
-      <ion-button expand="block" (click)="goToProfile()">Mon profil</ion-button>
+      <ion-item *ngIf="isLoggedIn && role === 'patient' && filteredMedecins.length === 0">
+        <ion-label>Aucun médecin trouvé.</ion-label>
+      </ion-item>
     </ion-card-content>
   </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>
-<!-- Plus de <app-tabs> ici, car il est géré par TabsComponent -->

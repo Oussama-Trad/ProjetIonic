@@ -1,16 +1,12 @@
-<ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-back-button [defaultHref]="role === 'medecin' ? '/accueil-medecin' : '/accueil'"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Mes Documents</ion-title>
-  </ion-toolbar>
-</ion-header>
+<app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
+  <ion-card *ngIf="isLoggedIn">
+    <ion-card-header>
+      <ion-card-title *ngIf="role === 'patient'">Mes Documents</ion-card-title>
+      <ion-card-title *ngIf="role === 'medecin'">Documents du Patient</ion-card-title>
+    </ion-card-header>
     <ion-card-content>
-      <!-- Envoi de document (patients uniquement) -->
       <div *ngIf="role === 'patient'">
         <ion-item>
           <ion-label position="floating">Nom du document</ion-label>
@@ -26,7 +22,6 @@
         <ion-button expand="block" (click)="uploadDocument()" [disabled]="!selectedFile || !nomDocument || !medecinEmail">Envoyer</ion-button>
       </div>
 
-      <!-- Liste des documents -->
       <ion-list>
         <ion-list-header>Documents</ion-list-header>
         <ion-item *ngFor="let doc of documents">
@@ -39,4 +34,16 @@
       </ion-list>
     </ion-card-content>
   </ion-card>
+
+  <ion-card *ngIf="!isLoggedIn">
+    <ion-card-header>
+      <ion-card-title>Non connecté</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Veuillez vous connecter pour gérer les documents.</p>
+      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <app-tabs></app-tabs>
 </ion-content>

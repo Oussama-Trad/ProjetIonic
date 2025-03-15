@@ -1,85 +1,89 @@
 import { Component, OnInit } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { HeaderComponent } from '../../components/header/header.component';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
-  standalone: false
+  standalone:false
 })
 export class HomePage implements OnInit {
-  user: any = {};
   isLoggedIn: boolean = false;
   role: string | null = null;
+  user: any = {};
   isEditing: boolean = false;
-  changePassword: boolean = false;
-  oldPassword: string = '';
-  newPassword: string = '';
+  photoPreview: string | null = null;
 
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
-    this.refreshState();
-  }
-
-  refreshState() {
-    const email = localStorage.getItem('email');
-    this.role = localStorage.getItem('role');
-    this.isLoggedIn = !!email;
-    if (this.isLoggedIn && email) {
-      this.loadUserData(email);
-    }
-  }
-
-  loadUserData(email: string) {
-    const fetchMethod = this.role === 'medecin' ? this.authService.getMedecin : this.authService.getUser;
-    fetchMethod(email).subscribe({
-      next: (response: any) => {
-        this.user = response;
-      },
-      error: (err: any) => console.error('Erreur chargement données :', err)
+    this.authService.isLoggedIn$.subscribe((loggedIn) => {
+      this.isLoggedIn = loggedIn;
+      this.role = localStorage.getItem('role');
+      if (loggedIn && this.role === 'patient') {
+        const email = localStorage.getItem('email');
+        if (email) {
+          this.authService.getUser(email).subscribe({
+            next: (response) => {
+              this.user = response;
+            },
+            error: (err) => console.error('Erreur chargement profil :', err),
+          });
+        }
+      } else if (this.role === 'medecin') {
+        this.router.navigate(['/medecin']);
+      }
     });
   }
 
   toggleEdit() {
     this.isEditing = !this.isEditing;
+    this.photoPreview = null;
   }
 
-  togglePasswordFields() {
-    // Rien à faire ici sauf si vous voulez ajouter une logique supplémentaire
+  onFileChange(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.photoPreview = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
-  saveChanges() {
-    const updateMethod = this.role === 'medecin' ? this.authService.updateMedecinAccount : this.authService.updateUserAccount;
-    updateMethod(this.user).subscribe({
-      next: () => {
-        if (this.changePassword && this.oldPassword && this.newPassword) {
-          this.authService.changePassword(this.user.email, this.oldPassword, this.newPassword).subscribe({
-            next: () => alert('Mot de passe changé avec succès'),
-            error: (err) => alert('Erreur changement mot de passe : ' + (err.error?.msg || 'Échec'))
-          });
-        }
-        alert('Modifications enregistrées');
+  saveProfile() {
+    if (!this.isLoggedIn || this.role !== 'patient') return;
+    const updatedUser = {
+      email: this.user.email,
+      firstName: this.user.firstName,
+      lastName: this.user.lastName,
+      phoneNumber: this.user.phoneNumber,
+      birthDate: this.user.birthDate,
+      address: this.user.address,
+      gender: this.user.gender,
+      profilePicture: this.photoPreview || this.user.photoProfil || this.user.profilePicture,
+    };
+    this.authService.updateUser(
+      updatedUser.email,
+      updatedUser.firstName,
+      updatedUser.lastName,
+      updatedUser.phoneNumber,
+      updatedUser.address,
+      updatedUser.birthDate,
+      updatedUser.gender,
+      updatedUser.profilePicture
+    ).subscribe({
+      next: (response) => {
+        this.user = response;
         this.isEditing = false;
       },
-      error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+      error: (err) => console.error('Erreur mise à jour profil :', err),
     });
   }
 
-  deleteAccount() {
-    if (confirm('Voulez-vous vraiment supprimer votre compte ?')) {
-      this.authService.deleteUser(this.user.email).subscribe({
-        next: () => {
-          this.authService.logout();
-          this.router.navigate(['/home']);
-        },
-        error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
-      });
-    }
+  goToLogin() {
+    this.router.navigate(['/login']);
   }
 }

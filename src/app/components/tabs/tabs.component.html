@@ -1,25 +1,26 @@
 <ion-tabs>
   <ion-tab-bar slot="bottom">
-    <!-- Onglet Accueil -->
-    <ion-tab-button [tab]="role === 'medecin' ? 'accueil-medecin' : 'accueil'">
+    <ion-tab-button (click)="goToAccueil()" *ngIf="role === 'patient' || !isLoggedIn">
       <ion-icon name="home-outline"></ion-icon>
       <ion-label>Accueil</ion-label>
     </ion-tab-button>
-
-    <!-- Onglet Profil -->
-    <ion-tab-button [tab]="role === 'medecin' ? 'medecin' : 'home'">
+    <ion-tab-button (click)="goToAccueilMedecin()" *ngIf="role === 'medecin'">
+      <ion-icon name="home-outline"></ion-icon>
+      <ion-label>Accueil</ion-label>
+    </ion-tab-button>
+    <ion-tab-button (click)="goToProfile()" *ngIf="isLoggedIn && role === 'patient'">
       <ion-icon name="person-outline"></ion-icon>
       <ion-label>Profil</ion-label>
     </ion-tab-button>
-
-    <!-- Onglet Médecins -->
-    <ion-tab-button [tab]="role === 'medecin' ? 'medecin' : 'medecin'">
+    <ion-tab-button (click)="goToMedecinProfile()" *ngIf="isLoggedIn && role === 'medecin'">
+      <ion-icon name="person-outline"></ion-icon>
+      <ion-label>Profil</ion-label>
+    </ion-tab-button>
+    <ion-tab-button (click)="goToMedecins()" *ngIf="role === 'patient' || !isLoggedIn">
       <ion-icon name="medkit-outline"></ion-icon>
       <ion-label>Médecins</ion-label>
     </ion-tab-button>
-
-    <!-- Onglet Paramètres -->
-    <ion-tab-button tab="parametres">
+    <ion-tab-button (click)="goToParametres()">
       <ion-icon name="settings-outline"></ion-icon>
       <ion-label>Paramètres</ion-label>
     </ion-tab-button>

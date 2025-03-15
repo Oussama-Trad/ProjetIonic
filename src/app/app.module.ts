@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { IonicModule } from '@ionic/angular';
 import { AppRoutingModule } from './app-routing.module';
@@ -16,12 +16,12 @@ import { ConsultationPage } from './pages/consultation/consultation.page';
 import { HistoriquePage } from './pages/historique/historique.page';
 import { ParametresPage } from './pages/parametres/parametres.page';
 import { HeaderComponent } from './components/header/header.component';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms'; // Pour ngModel
+import { HttpClientModule } from '@angular/common/http'; // Pour les appels API
+import { CommonModule } from '@angular/common'; // Pour ngIf, ngFor, etc.
 
 @NgModule({
   declarations: [
-    HomePage,
     AppComponent,
     TabsComponent,
     LoginPage,
@@ -41,9 +41,11 @@ import { HttpClientModule } from '@angular/common/http';
     BrowserModule,
     IonicModule.forRoot(),
     AppRoutingModule,
-    FormsModule,        // Pour ngModel dans les formulaires
-    HttpClientModule    // Pour les appels HTTP dans AuthService
+    FormsModule,
+    HttpClientModule,
+    CommonModule
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA], // Pour ignorer les erreurs sur les composants Ionic personnalisés
   bootstrap: [AppComponent]
 })
 export class AppModule {}

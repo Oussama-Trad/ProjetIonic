@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
-  standalone:false
+  standalone: false
 })
 export class HomePage implements OnInit {
   isLoggedIn: boolean = false;
@@ -27,6 +27,7 @@ export class HomePage implements OnInit {
           this.authService.getUser(email).subscribe({
             next: (response) => {
               this.user = response;
+              console.log('Données utilisateur chargées :', this.user);
             },
             error: (err) => console.error('Erreur chargement profil :', err),
           });
@@ -55,6 +56,7 @@ export class HomePage implements OnInit {
 
   saveProfile() {
     if (!this.isLoggedIn || this.role !== 'patient') return;
+
     const updatedUser = {
       email: this.user.email,
       firstName: this.user.firstName,
@@ -63,8 +65,11 @@ export class HomePage implements OnInit {
       birthDate: this.user.birthDate,
       address: this.user.address,
       gender: this.user.gender,
-      profilePicture: this.photoPreview || this.user.photoProfil || this.user.profilePicture,
+      profilePicture: this.photoPreview || this.user.profilePicture || '',
     };
+
+    console.log('Données envoyées pour mise à jour :', updatedUser);
+
     this.authService.updateUser(
       updatedUser.email,
       updatedUser.firstName,
@@ -78,8 +83,13 @@ export class HomePage implements OnInit {
       next: (response) => {
         this.user = response;
         this.isEditing = false;
+        alert('Profil mis à jour avec succès !');
+        console.log('Réponse du serveur :', response);
       },
-      error: (err) => console.error('Erreur mise à jour profil :', err),
+      error: (err) => {
+        console.error('Erreur mise à jour profil :', err);
+        alert('Erreur lors de la mise à jour : ' + (err.error?.msg || 'Échec'));
+      },
     });
   }
 

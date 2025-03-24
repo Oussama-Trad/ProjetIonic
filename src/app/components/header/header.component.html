@@ -3,22 +3,14 @@
     <ion-buttons slot="start">
       <ion-menu-button menuId="mainMenu"></ion-menu-button>
     </ion-buttons>
-    <ion-avatar slot="start">
-      <img *ngIf="isLoggedIn && (user?.photoProfil || user?.profilePicture)"
-           [src]="user?.photoProfil || user?.profilePicture"
-           (click)="updateProfilePicture()" />
-      <img *ngIf="isLoggedIn && !user?.photoProfil && !user?.profilePicture"
-           src="assets/default-avatar.png"
-           (click)="updateProfilePicture()" />
-    </ion-avatar>
-    <ion-title>
-      <span *ngIf="isLoggedIn">{{ user?.prenom || user?.firstName || 'Utilisateur' }} {{ user?.nom || user?.lastName || '' }}</span>
-      <span *ngIf="!isLoggedIn">Cabinet Médical</span>
-    </ion-title>
+    <ion-title>{{ fullName }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button color="light" fill="solid" (click)="logout()" *ngIf="isLoggedIn">
-        Déconnexion
-      </ion-button>
+      <ion-avatar *ngIf="isLoggedIn" (click)="triggerFileInput()">
+        <img *ngIf="profilePictureUrl" [src]="profilePictureUrl" alt="Photo de profil" (error)="handleImageError($event)" />
+        <ion-icon *ngIf="!profilePictureUrl" name="person-circle-outline"></ion-icon>
+      </ion-avatar>
+      <input type="file" accept="image/*" #fileInput style="display: none;" (change)="onFileChange($event)" />
+      <ion-button *ngIf="isLoggedIn" (click)="logout()">Déconnexion</ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

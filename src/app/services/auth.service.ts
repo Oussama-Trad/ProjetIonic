@@ -119,11 +119,25 @@ export class AuthService {
     }
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     console.log('Récupération utilisateur pour email :', email);
+    console.log('En-tête Authorization envoyé :', headers.get('Authorization'));
     return this.http.get(`${this.apiUrl}/user?email=${email}`, { headers }).pipe(
-      tap((response) => console.log('Utilisateur récupéré :', response)),
+      tap((response) => {
+        console.log('Utilisateur récupéré avec succès :', response);
+        // Vérifier les champs nécessaires
+        const requiredFields = ['firstName', 'lastName', 'profilePicture'];
+        requiredFields.forEach(field => {
+          if (!(field in response)) {
+            console.warn(`Champ manquant dans la réponse utilisateur: ${field}`);
+          }
+        });
+      }),
       catchError((error) => {
         console.error('Erreur lors de la récupération de l’utilisateur :', error);
-        if (error.status === 401) this.logout();
+        console.error('Détails de l’erreur :', error.status, error.statusText, error.error);
+        if (error.status === 401) {
+          console.warn('Erreur 401 détectée, déconnexion initiée');
+          this.logout();
+        }
         return throwError(() => new Error('Erreur récupération utilisateur'));
       })
     );
@@ -141,11 +155,25 @@ export class AuthService {
     }
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     console.log('Récupération médecin pour email :', email);
+    console.log('En-tête Authorization envoyé :', headers.get('Authorization'));
     return this.http.get(`${this.apiUrl}/medecin?email=${email}`, { headers }).pipe(
-      tap((response) => console.log('Médecin récupéré :', response)),
+      tap((response) => {
+        console.log('Médecin récupéré avec succès :', response);
+        // Vérifier les champs nécessaires
+        const requiredFields = ['prenom', 'nom', 'photoProfil'];
+        requiredFields.forEach(field => {
+          if (!(field in response)) {
+            console.warn(`Champ manquant dans la réponse médecin: ${field}`);
+          }
+        });
+      }),
       catchError((error) => {
         console.error('Erreur lors de la récupération du médecin :', error);
-        if (error.status === 401) this.logout();
+        console.error('Détails de l’erreur :', error.status, error.statusText, error.error);
+        if (error.status === 401) {
+          console.warn('Erreur 401 détectée, déconnexion initiée');
+          this.logout();
+        }
         return throwError(() => new Error('Erreur récupération médecin'));
       })
     );
@@ -353,6 +381,27 @@ export class AuthService {
     );
   }
 
+  updateUserProfilePicture(email: string, updatedData: any): Observable<any> {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Aucun token trouvé pour updateUserProfilePicture');
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+    console.log('Mise à jour de la photo de profil pour :', email, updatedData);
+    return this.http.put(`${this.apiUrl}/user`, updatedData, { headers }).pipe(
+      tap((response) => console.log('Photo de profil mise à jour :', response)),
+      catchError((error) => {
+        console.error('Erreur lors de la mise à jour de la photo de profil :', error);
+        if (error.status === 401) this.logout();
+        return throwError(() => new Error('Erreur mise à jour photo de profil'));
+      })
+    );
+  }
+
   updateUserAccount(user: any): Observable<any> {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -484,7 +533,6 @@ export class AuthService {
     );
   }
 
-  // Nouvelle méthode pour récupérer les disponibilités d'un médecin
   getMedecinDisponibilites(email: string): Observable<any> {
     const token = localStorage.getItem('token');
     if (!token) {

@@ -133,36 +133,98 @@ def login():
 def get_user():
     email = request.args.get('email')
     identity = get_jwt_identity()
+    print(f"Requête GET /api/user - email: {email}, identité: {identity}")
     if identity != email:
+        print(f"Accès non autorisé: identité ({identity}) ne correspond pas à l'email ({email})")
         return jsonify({'msg': 'Accès non autorisé'}), 403
     user = users_collection.find_one({'email': email}, {'_id': 0, 'password': 0})
     if user:
-        print(f"Utilisateur trouvé: {email}")
+        print(f"Utilisateur trouvé: {email}, données: {user}")
+        # Vérifier que les champs nécessaires sont présents
+        required_fields = ['firstName', 'lastName', 'profilePicture']
+        for field in required_fields:
+            if field not in user:
+                print(f"Champ manquant dans les données utilisateur: {field}")
+                user[field] = ''  # Ajouter une valeur par défaut si le champ est manquant
         return jsonify(user), 200
     print(f"Utilisateur non trouvé: {email}")
     return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
-# Récupérer un médecin (Corrigé pour permettre aux patients de voir les infos publiques)
+# Mise à jour d'un utilisateur
+@app.route('/api/user', methods=['PUT'])
+@jwt_required()
+def update_user():
+    email = get_jwt_identity()
+    data = request.get_json()
+    print(f"Requête PUT /api/user - email: {email}, données: {data}")
+    if email != data.get('email'):
+        print(f"Accès non autorisé: identité ({email}) ne correspond pas à l'email dans les données ({data.get('email')})")
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    # Récupérer le rôle depuis le token JWT
+    token = request.headers.get('Authorization').split('Bearer ')[1]
+    decoded_token = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+    role = decoded_token.get('role')
+    print(f"Rôle extrait du token: {role}")
+
+    # Choisir la collection en fonction du rôle
+    collection = medecins_collection if role == 'medecin' else users_collection
+    
+    update_data = {
+        'firstName': data.get('firstName'),
+        'lastName': data.get('lastName'),
+        'phoneNumber': data.get('phoneNumber'),
+        'address': data.get('address'),
+        'birthDate': data.get('birthDate'),
+        'gender': data.get('gender'),
+        'profilePicture': data.get('profilePicture') if role == 'patient' else None,
+        'photoProfil': data.get('photoProfil') if role == 'medecin' else None
+    }
+    
+    # Supprimer les champs None pour ne pas écraser les valeurs existantes avec None
+    update_data = {k: v for k, v in update_data.items() if v is not None}
+    print(f"Données à mettre à jour: {update_data}")
+    
+    result = collection.update_one(
+        {'email': email},
+        {'$set': update_data}
+    )
+    
+    if result.matched_count > 0:
+        updated_user = collection.find_one({'email': email}, {'_id': 0, 'password': 0, 'motDePasse': 0})
+        print(f"Utilisateur mis à jour: {email}, nouvelles données: {updated_user}")
+        return jsonify(updated_user), 200
+    else:
+        print(f"Utilisateur non trouvé pour mise à jour: {email}")
+        return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+# Récupérer un médecin
 @app.route('/api/medecin', methods=['GET'])
 @jwt_required()
 def get_medecin():
     email = request.args.get('email')
     identity = get_jwt_identity()
-    # Vérifier si l'utilisateur connecté existe (patient ou médecin)
+    print(f"Requête GET /api/medecin - email: {email}, identité: {identity}")
     user = users_collection.find_one({'email': identity})
     medecin = medecins_collection.find_one({'email': identity})
     if not user and not medecin:
+        print(f"Utilisateur ou médecin non trouvé pour identité: {identity}")
         return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
-    # Récupérer les infos du médecin cible
     target_medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
     if target_medecin:
-        print(f"Médecin trouvé pour {email} par {identity}")
+        print(f"Médecin trouvé pour {email} par {identity}, données: {target_medecin}")
+        # Vérifier que les champs nécessaires sont présents
+        required_fields = ['prenom', 'nom', 'photoProfil']
+        for field in required_fields:
+            if field not in target_medecin:
+                print(f"Champ manquant dans les données médecin: {field}")
+                target_medecin[field] = ''  # Ajouter une valeur par défaut si le champ est manquant
         return jsonify(target_medecin), 200
     print(f"Médecin non trouvé: {email}")
     return jsonify({'msg': 'Médecin non trouvé'}), 404
 
-# Liste des médecins (publique)
+# Liste des médecins
 @app.route('/api/medecins', methods=['GET'])
 def get_all_medecins():
     search_query = request.args.get('search', '')
@@ -278,7 +340,7 @@ def create_rendezvous():
         print(f"Erreur lors de l'insertion dans MongoDB: {str(e)}")
         raise e
 
-# Gérer les rendez-vous (accepter ou annuler)
+# Gérer les rendez-vous
 @app.route('/api/medecin/rendezvous/<action>', methods=['PUT'])
 @jwt_required()
 def manage_rendezvous(action):

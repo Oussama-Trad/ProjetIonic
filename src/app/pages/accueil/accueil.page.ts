@@ -12,7 +12,7 @@ export class AccueilPage implements OnInit {
   isLoggedIn: boolean = false;
   role: string | null = null;
   user: any = {};
-  searchQuery: string = '';
+  searchQuery: string = ''; // Variable pour le champ de recherche
   allMedecins: any[] = [];
   filteredMedecins: any[] = [];
 
@@ -41,15 +41,17 @@ export class AccueilPage implements OnInit {
         this.loadAllMedecins();
       } else if (this.role === 'medecin') {
         this.router.navigate(['/accueil-medecin']);
+      } else if (!loggedIn) {
+        this.loadAllMedecins(); // Charger les médecins même si non connecté
       }
     });
   }
 
   loadAllMedecins() {
-    this.authService.getAllMedecins('').subscribe({
+    this.authService.getAllMedecins(this.searchQuery).subscribe({
       next: (response: any) => {
         this.allMedecins = Array.isArray(response) ? response : [];
-        this.filterMedecins();
+        this.filteredMedecins = [...this.allMedecins];
         console.log('Tous les médecins chargés :', this.allMedecins.map(m => ({
           prenom: m.prenom,
           nom: m.nom,
@@ -57,6 +59,7 @@ export class AccueilPage implements OnInit {
           specialite: m.specialite,
           adresse: m.adresse
         })));
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Erreur chargement tous les médecins :', err);
@@ -68,38 +71,20 @@ export class AccueilPage implements OnInit {
   }
 
   searchMedecins() {
-    if (!this.isLoggedIn || this.role !== 'patient') return;
     console.log('Recherche avec query :', this.searchQuery);
-    this.filterMedecins();
-  }
-
-  filterMedecins() {
-    if (!this.searchQuery) {
-      this.filteredMedecins = [...this.allMedecins];
-    } else {
-      const query = this.searchQuery.toLowerCase();
-      this.filteredMedecins = this.allMedecins.filter(medecin =>
-        (medecin.prenom?.toLowerCase().includes(query) ||
-         medecin.nom?.toLowerCase().includes(query) ||
-         medecin.specialite?.toLowerCase().includes(query))
-      );
-    }
-    console.log('Médecins filtrés après recherche :', this.filteredMedecins.map(m => ({
-      prenom: m.prenom,
-      nom: m.nom,
-      email: m.email
-    })));
-    this.cdr.detectChanges();
+    this.loadAllMedecins(); // Recharger avec la nouvelle recherche
   }
 
   bookRendezVous(medecinEmail: string) {
     console.log('Clic sur médecin, email reçu :', medecinEmail);
+    if (!medecinEmail) {
+      console.error('Erreur : medecinEmail est vide ou invalide');
+      alert('Erreur : Aucun email de médecin détecté.');
+      return;
+    }
     if (!this.isLoggedIn) {
       console.log('Utilisateur non connecté, redirection vers login');
       this.router.navigate(['/login']);
-    } else if (!medecinEmail) {
-      console.error('Erreur : medecinEmail est vide ou invalide');
-      alert('Erreur : Aucun email de médecin détecté. Vérifiez les données.');
     } else {
       console.log('Redirection vers rendez-vous avec email :', medecinEmail);
       this.router.navigate(['/rendez-vous'], { queryParams: { medecinEmail } });

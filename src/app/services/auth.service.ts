@@ -484,6 +484,25 @@ export class AuthService {
     );
   }
 
+  // Nouvelle méthode pour récupérer les disponibilités d'un médecin
+  getMedecinDisponibilites(email: string): Observable<any> {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('Aucun token trouvé pour getMedecinDisponibilites');
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
+    console.log('Récupération des disponibilités pour le médecin :', email);
+    return this.http.get(`${this.apiUrl}/medecin/disponibilites?email=${email}`, { headers }).pipe(
+      tap((response) => console.log('Disponibilités récupérées :', response)),
+      catchError((error) => {
+        console.error('Erreur lors de la récupération des disponibilités :', error);
+        if (error.status === 401) this.logout();
+        return throwError(() => new Error('Erreur récupération disponibilités'));
+      })
+    );
+  }
+
   logout() {
     console.log('Déconnexion initiée');
     localStorage.removeItem('token');

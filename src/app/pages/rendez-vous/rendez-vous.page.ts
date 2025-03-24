@@ -12,8 +12,9 @@ export class RendezVousPage implements OnInit {
   medecin: any = {};
   currentMonth: Date = new Date();
   calendarDays: { date: Date; isAvailable: boolean; isToday: boolean }[] = [];
-  selectedDay: string | null = null; // Changé en string pour correspondre à toISOString().split('T')[0]
+  selectedDay: string | null = null;
   selectedHeure: string = '';
+  disponibilites: any = {};
 
   constructor(
     private route: ActivatedRoute,
@@ -25,9 +26,10 @@ export class RendezVousPage implements OnInit {
     const medecinEmail = this.route.snapshot.queryParamMap.get('medecinEmail');
     if (medecinEmail) {
       this.loadMedecinData(medecinEmail);
+      this.loadDisponibilites(medecinEmail);
     } else {
       console.error('Aucun email de médecin fourni dans les paramètres');
-      this.router.navigate(['/accueil']); // Redirection vers accueil si pas d'email
+      this.router.navigate(['/accueil']);
     }
     this.checkAuth();
   }
@@ -54,20 +56,32 @@ export class RendezVousPage implements OnInit {
     });
   }
 
+  loadDisponibilites(medecinEmail: string) {
+    this.authService.getMedecinDisponibilites(medecinEmail).subscribe({
+      next: (response: any) => {
+        this.disponibilites = response;
+        console.log('Disponibilités chargées :', this.disponibilites);
+        this.loadCalendar();
+      },
+      error: (err: any) => {
+        console.error('Erreur chargement disponibilités :', err);
+        if (err.status === 401) this.router.navigate(['/login']);
+      },
+    });
+  }
+
   loadCalendar() {
     const year = this.currentMonth.getFullYear();
     const month = this.currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Ajustement pour commencer par lundi
+    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
     this.calendarDays = [];
-    // Ajouter les jours vides avant le 1er du mois
     for (let i = 0; i < startDay; i++) {
       this.calendarDays.push({ date: new Date(year, month, -(startDay - 1) + i), isAvailable: false, isToday: false });
     }
-    // Ajouter les jours du mois
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
       const isAvailable = this.isDayAvailable(currentDate);
@@ -77,13 +91,13 @@ export class RendezVousPage implements OnInit {
   }
 
   isDayAvailable(date: Date): boolean {
-    const dayOfWeek = date.getDay(); // 0 = dimanche, 1 = lundi, ..., 6 = samedi
-    if (dayOfWeek === 0 || dayOfWeek === 6) return false; // Week-end
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
 
     const dateStr = date.toISOString().split('T')[0];
-    const heuresPossibles = this.generateAvailableSlots(date);
-    const rdvConflicts = (this.medecin.rendezVousConfirmes || [])
-      .concat(this.medecin.rendezVousDemandes || [])
+    const heuresPossibles = this.generateAvailableSlots();
+    const rdvConflicts = (this.disponibilites.rendezVousConfirmes || [])
+      .concat(this.disponibilites.rendezVousDemandes || [])
       .filter((rdv: any) => rdv.date === dateStr && ['accepté', 'en attente'].includes(rdv.statut));
 
     const availableSlots = heuresPossibles.filter(heure => 
@@ -92,25 +106,25 @@ export class RendezVousPage implements OnInit {
     return availableSlots.length > 0;
   }
 
-  generateAvailableSlots(date: Date): string[] {
+  generateAvailableSlots(): string[] {
     const slots = [];
-    for (let hour = 8; hour <= 18; hour++) {
-      const heureStr = `${hour.toString().padStart(2, '0')}:00`;
-      slots.push(heureStr);
+    for (let hour = 8; hour < 18; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      slots.push(`${hour.toString().padStart(2, '0')}:30`);
     }
     return slots;
   }
 
   isSlotAvailable(date: string, heure: string): boolean {
-    const rdvConflicts = (this.medecin.rendezVousConfirmes || [])
-      .concat(this.medecin.rendezVousDemandes || [])
+    const rdvConflicts = (this.disponibilites.rendezVousConfirmes || [])
+      .concat(this.disponibilites.rendezVousDemandes || [])
       .some((rdv: any) => rdv.date === date && rdv.heure === heure && ['accepté', 'en attente'].includes(rdv.statut));
     return !rdvConflicts;
   }
 
   selectDay(day: { date: Date; isAvailable: boolean; isToday: boolean }) {
     if (day.isAvailable) {
-      this.selectedDay = day.date.toISOString().split('T')[0]; // Stocker la date au format ISO
+      this.selectedDay = day.date.toISOString().split('T')[0];
       this.selectedHeure = '';
       console.log('Jour sélectionné :', this.selectedDay);
     }
@@ -118,7 +132,7 @@ export class RendezVousPage implements OnInit {
 
   getHoursForSelectedDay(): { heure: string; disponible: boolean }[] {
     if (!this.selectedDay) return [];
-    const heuresPossibles = this.generateAvailableSlots(new Date(this.selectedDay));
+    const heuresPossibles = this.generateAvailableSlots();
     return heuresPossibles.map(heure => ({
       heure,
       disponible: this.isSlotAvailable(this.selectedDay!, heure)
@@ -152,13 +166,16 @@ export class RendezVousPage implements OnInit {
       return;
     }
 
+    // Vérification des données avant envoi
     const rdvData = {
-      medecinEmail: this.medecin.email,
-      userEmail,
+      medecinEmail: this.medecin.email || this.route.snapshot.queryParamMap.get('medecinEmail'), // Sécurité si this.medecin.email n'est pas encore chargé
+      userEmail: userEmail,
       date: this.selectedDay,
       heure: this.selectedHeure,
       motif: 'Consultation générale'
     };
+
+    console.log('Données envoyées à createRendezVous :', rdvData);
 
     this.authService.createRendezVous(rdvData).subscribe({
       next: (response) => {
@@ -166,11 +183,11 @@ export class RendezVousPage implements OnInit {
         alert('Rendez-vous demandé avec succès !');
         this.selectedDay = null;
         this.selectedHeure = '';
-        this.loadMedecinData(this.medecin.email); // Recharger pour mettre à jour le calendrier
+        this.loadDisponibilites(this.medecin.email || rdvData.medecinEmail);
       },
       error: (err) => {
         console.error('Erreur lors de la création du rendez-vous :', err);
-        const errorMsg = err.message || 'Échec de la réservation';
+        const errorMsg = err.error?.msg || 'Échec de la réservation';
         alert(`Erreur : ${errorMsg}`);
         if (err.status === 401) {
           this.router.navigate(['/login']);

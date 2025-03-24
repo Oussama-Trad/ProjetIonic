@@ -98,7 +98,7 @@ def register():
         'documents': [],
         'notifications': [],
         'createdAt': datetime.utcnow(),
-        'settings': {'darkMode': False, 'language': 'fr'}  # Ajout des paramètres
+        'settings': {'darkMode': False, 'language': 'fr'}
     }
     users_collection.insert_one(user_data)
     print(f"Utilisateur enregistré: {email}")
@@ -142,18 +142,23 @@ def get_user():
     print(f"Utilisateur non trouvé: {email}")
     return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
-# Récupérer un médecin
+# Récupérer un médecin (Corrigé pour permettre aux patients de voir les infos publiques)
 @app.route('/api/medecin', methods=['GET'])
 @jwt_required()
 def get_medecin():
     email = request.args.get('email')
     identity = get_jwt_identity()
-    if identity != email:
-        return jsonify({'msg': 'Accès non autorisé'}), 403
-    medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
-    if medecin:
-        print(f"Médecin trouvé: {email}")
-        return jsonify(medecin), 200
+    # Vérifier si l'utilisateur connecté existe (patient ou médecin)
+    user = users_collection.find_one({'email': identity})
+    medecin = medecins_collection.find_one({'email': identity})
+    if not user and not medecin:
+        return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+    # Récupérer les infos du médecin cible
+    target_medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
+    if target_medecin:
+        print(f"Médecin trouvé pour {email} par {identity}")
+        return jsonify(target_medecin), 200
     print(f"Médecin non trouvé: {email}")
     return jsonify({'msg': 'Médecin non trouvé'}), 404
 
@@ -206,7 +211,7 @@ def create_rendezvous():
     user_email = data.get('userEmail')
 
     if not all([medecin_email, date, heure, user_email]):
-        print("Données manquantes dans la requête")
+        print("Données manquantes dans la requête:", {'medecinEmail': medecin_email, 'date': date, 'heure': heure, 'userEmail': user_email})
         return jsonify({'msg': 'Données manquantes'}), 400
 
     if email != user_email:
@@ -226,7 +231,7 @@ def create_rendezvous():
         parsed_date = datetime.strptime(date, '%Y-%m-%d')
         day_of_week = parsed_date.weekday()
         print(f"Date {date} validée, jour de la semaine: {day_of_week}")
-        if day_of_week >= 5:  # 5 = samedi, 6 = dimanche
+        if day_of_week >= 5:
             print(f"Date {date} est un week-end")
             return jsonify({'msg': 'Pas de disponibilité le week-end'}), 400
     except ValueError as e:
@@ -367,7 +372,7 @@ def upload_document():
     )
     return jsonify({'msg': 'Document téléversé'}), 201
 
-# Mettre à jour les paramètres (Corrigé)
+# Mettre à jour les paramètres
 @app.route('/api/user/settings', methods=['PUT'])
 @jwt_required()
 def update_settings():
@@ -375,19 +380,16 @@ def update_settings():
     data = request.get_json()
     print(f"Requête reçue pour /api/user/settings avec données: {data}, identité: {email}")
 
-    # Validation des données reçues
     if not isinstance(data, dict):
         print(f"Données invalides reçues: {data}")
         return jsonify({'msg': 'Les données doivent être un objet JSON valide'}), 400
 
-    # Récupération des paramètres avec valeurs par défaut
     dark_mode = data.get('darkMode')
     language = data.get('language')
     if dark_mode is None or language is None:
         print(f"Paramètres manquants: darkMode={dark_mode}, language={language}")
         return jsonify({'msg': 'Les paramètres darkMode et language sont requis'}), 400
 
-    # Validation des types
     if not isinstance(dark_mode, bool):
         print(f"darkMode doit être un booléen, reçu: {dark_mode}")
         return jsonify({'msg': 'darkMode doit être un booléen'}), 400
@@ -398,7 +400,6 @@ def update_settings():
     settings = {'darkMode': dark_mode, 'language': language}
     print(f"Paramètres à mettre à jour: {settings}")
 
-    # Mise à jour dans la base de données
     user = users_collection.find_one({'email': email})
     if user:
         result = users_collection.update_one({'email': email}, {'$set': {'settings': settings}})
@@ -421,6 +422,25 @@ def update_settings():
 
     print(f"Utilisateur ou médecin non trouvé pour mise à jour des paramètres: {email}")
     return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+# Récupérer les disponibilités d'un médecin
+@app.route('/api/medecin/disponibilites', methods=['GET'])
+@jwt_required()
+def get_medecin_disponibilites():
+    email = request.args.get('email')
+    medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
+    if not medecin:
+        print(f"Médecin non trouvé: {email}")
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    
+    rdv_confirmes = medecin.get('rendezVousConfirmes', [])
+    rdv_demandes = medecin.get('rendezVousDemandes', [])
+    disponibilites = {
+        'rendezVousConfirmes': rdv_confirmes,
+        'rendezVousDemandes': rdv_demandes
+    }
+    print(f"Disponibilités récupérées pour {email}: {disponibilites}")
+    return jsonify(disponibilites), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

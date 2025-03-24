@@ -1,44 +1,29 @@
-<app-header></app-header>
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Accueil</ion-title>
+  </ion-toolbar>
+</ion-header>
 
-<ion-content class="ion-padding">
-  <ion-card class="advertisement">
-    <ion-card-header>
-      <ion-card-title>Publicité</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <img src="https://via.placeholder.com/300x100" alt="Publicité" />
-    </ion-card-content>
-  </ion-card>
+<ion-content>
+  <ion-searchbar
+    [(ngModel)]="searchQuery"
+    (ionInput)="searchMedecins()"
+    placeholder="Rechercher un médecin par nom ou spécialité"
+    debounce="500">
+  </ion-searchbar>
 
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Bienvenue, {{ user.firstName || 'Utilisateur' }} {{ user.lastName || '' }}</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <ion-item *ngIf="!isLoggedIn">
-        <ion-label>Veuillez vous connecter pour voir les médecins</ion-label>
-        <ion-button slot="end" (click)="goToLogin()">Connexion</ion-button>
-      </ion-item>
-      <ion-item *ngIf="isLoggedIn && role === 'patient'">
-        <ion-label position="floating">Rechercher un médecin</ion-label>
-        <ion-input [(ngModel)]="searchQuery" (ionInput)="searchMedecins()" placeholder="Nom ou spécialité"></ion-input>
-      </ion-item>
-      <ion-list *ngIf="isLoggedIn && role === 'patient'">
-        <ion-item *ngFor="let medecin of filteredMedecins" (click)="bookRendezVous(medecin.email)" button>
-          <ion-avatar slot="start">
-            <img [src]="medecin.photoProfil || 'https://via.placeholder.com/40'" alt="Photo de profil">
-          </ion-avatar>
-          <ion-label>
-            <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
-            <p>{{ medecin.specialite }} - {{ medecin.adresse }}</p>
-          </ion-label>
-        </ion-item>
-      </ion-list>
-      <ion-item *ngIf="isLoggedIn && role === 'patient' && filteredMedecins.length === 0">
-        <ion-label>Aucun médecin trouvé.</ion-label>
-      </ion-item>
-    </ion-card-content>
-  </ion-card>
+  <ion-list>
+    <ion-item *ngFor="let medecin of filteredMedecins" (click)="bookRendezVous(medecin.email)" button>
+      <ion-label>
+        <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
+        <p>{{ medecin.specialite }}</p>
+        <p>{{ medecin.adresse }}</p>
+      </ion-label>
+    </ion-item>
+    <ion-item *ngIf="filteredMedecins.length === 0">
+      <ion-label>Aucun médecin trouvé</ion-label>
+    </ion-item>
+  </ion-list>
 
-  <app-tabs></app-tabs>
+  <ion-button *ngIf="!isLoggedIn" expand="block" (click)="goToLogin()">Se connecter</ion-button>
 </ion-content>

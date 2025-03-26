@@ -42,6 +42,7 @@ export class AccueilMedecinPage implements OnInit {
       },
       error: (err) => {
         console.error('Erreur lors du chargement des données médecin :', err);
+        alert('Erreur lors du chargement des données médecin : ' + err.message);
         this.router.navigate(['/login']);
       },
     });
@@ -53,10 +54,12 @@ export class AccueilMedecinPage implements OnInit {
         this.rendezVousDemandes = response.rendezVousDemandes || [];
         this.rendezVousConfirmes = response.rendezVousConfirmes || [];
         console.log('Rendez-vous demandés chargés :', this.rendezVousDemandes);
+        console.log('Structure de tous les rendez-vous demandés :', this.rendezVousDemandes); // Log pour déboguer
         console.log('Rendez-vous confirmés chargés :', this.rendezVousConfirmes);
       },
       error: (err) => {
         console.error('Erreur lors du chargement des rendez-vous :', err);
+        alert('Erreur lors du chargement des rendez-vous : ' + err.message);
       },
     });
   }
@@ -68,7 +71,22 @@ export class AccueilMedecinPage implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-    this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, action).subscribe({
+
+    // Vérification et extraction des champs nécessaires
+    const userEmail = rdv?.userEmail || rdv?.patientEmail; // Ajustez selon la structure réelle
+    const date = rdv?.date;
+    const heure = rdv?.heure;
+
+    // Validation des données
+    if (!userEmail || !date || !heure) {
+      console.error('Données manquantes pour gérer le rendez-vous :', { userEmail, date, heure, rdv });
+      alert('Erreur : données du rendez-vous incomplètes. Vérifiez les champs userEmail, date et heure.');
+      return;
+    }
+
+    console.log('Données envoyées pour gestion rendez-vous :', { userEmail, date, heure, action });
+
+    this.authService.manageRendezVous(userEmail, date, heure, action).subscribe({
       next: (response) => {
         console.log(`Rendez-vous ${action} avec succès :`, response);
         this.loadRendezVous(this.email!); // Recharger les rendez-vous après l'action
@@ -82,22 +100,39 @@ export class AccueilMedecinPage implements OnInit {
           alert('Accès refusé : vous n’êtes pas autorisé à effectuer cette action.');
         } else if (err.status === 401) {
           this.router.navigate(['/login']);
+        } else if (err.status === 500) {
+          alert('Erreur serveur interne : veuillez vérifier les logs du serveur pour plus de détails.');
         }
       },
     });
   }
 
   addConsultation(rdv: any) {
+    const userEmail = rdv?.userEmail || rdv?.patientEmail;
+    const date = rdv?.date;
+    const heure = rdv?.heure;
+
+    if (!userEmail || !date || !heure) {
+      console.error('Données manquantes pour ajouter une consultation :', { userEmail, date, heure, rdv });
+      alert('Erreur : données du rendez-vous incomplètes pour ajouter une consultation.');
+      return;
+    }
+
     this.router.navigate(['/consultation'], {
       queryParams: {
-        userEmail: rdv.userEmail,
-        date: rdv.date,
-        heure: rdv.heure,
+        userEmail,
+        date,
+        heure,
       },
     });
   }
 
   viewDocuments(userEmail: string) {
+    if (!userEmail) {
+      console.error('userEmail manquant pour viewDocuments');
+      alert('Erreur : email de l’utilisateur manquant.');
+      return;
+    }
     this.router.navigate(['/documents'], { queryParams: { userEmail } });
   }
 

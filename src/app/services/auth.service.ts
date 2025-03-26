@@ -120,7 +120,13 @@ export class AuthService {
       tap((response) => console.log('Utilisateur récupéré avec succès :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération de l’utilisateur :', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
+        if (error.status === 404) {
+          return throwError(() => new Error('Utilisateur non trouvé dans la base de données'));
+        }
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération utilisateur'));
       })
     );
@@ -138,7 +144,13 @@ export class AuthService {
       tap((response) => console.log('Médecin récupéré avec succès :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération du médecin :', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
+        if (error.status === 404) {
+          return throwError(() => new Error('Médecin non trouvé dans la base de données'));
+        }
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération médecin'));
       })
     );
@@ -189,6 +201,13 @@ export class AuthService {
       console.error('Aucun token trouvé pour manageRendezVous');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
+
+    // Validation des données
+    if (!userEmail || !date || !heure || !action) {
+      console.error('Données invalides pour manageRendezVous :', { userEmail, date, heure, action });
+      return throwError(() => new Error('Données invalides : userEmail, date, heure ou action manquant'));
+    }
+
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -200,7 +219,13 @@ export class AuthService {
       catchError((error) => {
         console.error(`Erreur lors de la gestion du rendez-vous (${action}) :`, error);
         const errorMsg = error.error?.msg || `Échec de l'action ${action} sur le rendez-vous`;
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
+        if (error.status === 500) {
+          return throwError(() => new Error('Erreur serveur interne : vérifiez les logs du serveur'));
+        }
         return throwError(() => new Error(errorMsg));
       })
     );
@@ -506,7 +531,10 @@ export class AuthService {
       tap((response) => console.log('Disponibilités récupérées :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des disponibilités :', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération disponibilités'));
       })
     );

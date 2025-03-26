@@ -10,7 +10,7 @@ from jwt.exceptions import InvalidTokenError
 
 app = Flask(__name__)
 
-# Configuration CORS
+# Configuration CORS simplifiée
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:8100"],
@@ -20,14 +20,6 @@ CORS(app, resources={
         "supports_credentials": True
     }
 }, supports_credentials=True)
-
-@app.after_request
-def add_cors_headers(response):
-    print(f"Réponse envoyée pour {request.path}: {response.status} - Headers: {dict(response.headers)}")
-    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:8100'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-Requested-With'
-    return response
 
 app.config['JWT_SECRET_KEY'] = "ma_cle_secrete_super_securisee"
 jwt_manager = JWTManager(app)
@@ -52,9 +44,7 @@ def unauthorized_callback(error):
 @app.errorhandler(Exception)
 def handle_exception(e):
     print(f"Erreur inattendue dans {request.path}: {str(e)}")
-    response = jsonify({'msg': 'Erreur serveur interne', 'error': str(e)})
-    response.status_code = 500
-    return add_cors_headers(response)
+    return jsonify({'msg': 'Erreur serveur interne', 'error': str(e)}), 500
 
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -65,17 +55,21 @@ def verify_password(password, hashed):
 @app.route('/api/<path:path>', methods=['OPTIONS'])
 def handle_options(path):
     print(f"Requête OPTIONS reçue pour /api/{path}")
-    response = make_response('', 200)
-    response.headers['Access-Control-Allow-Origin'] = 'http://localhost:8100'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-Requested-With'
-    response.headers['Access-Control-Max-Age'] = '86400'
-    return response
+    return make_response('', 200)
 
 # Inscription
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
+    print(f"Données reçues pour inscription: {data}")
+
+    # Validation des champs requis
+    required_fields = ['email', 'password', 'firstName', 'lastName', 'phoneNumber', 'birthDate', 'address', 'gender']
+    for field in required_fields:
+        if not data.get(field):
+            print(f"Champ manquant lors de l'inscription: {field}")
+            return jsonify({'msg': f'Champ {field} manquant'}), 400
+
     email = data.get('email')
     if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
         print(f"Email déjà utilisé: {email}")
@@ -238,22 +232,6 @@ def get_all_medecins():
 @app.route('/api/rendezvous', methods=['POST'])
 @jwt_required()
 def create_rendezvous():
-    auth_header = request.headers.get('Authorization', '')
-    print(f"En-tête Authorization reçu: {auth_header}")
-    if not auth_header or 'Bearer ' not in auth_header:
-        print("Aucun token Bearer trouvé dans l'en-tête")
-        return jsonify({'msg': 'Token manquant ou mal formé'}), 401
-    
-    token = auth_header.split('Bearer ')[1].strip()
-    print(f"Token extrait: {token}")
-    
-    try:
-        decoded = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
-        print(f"Token décodé avec succès: {decoded}")
-    except Exception as e:
-        print(f"Erreur lors du décodage manuel du token: {str(e)}")
-        return jsonify({'msg': 'Token invalide ou mal formé'}), 401
-
     email = get_jwt_identity()
     data = request.get_json()
     if not isinstance(data, dict):
@@ -267,10 +245,12 @@ def create_rendezvous():
     motif = data.get('motif', 'Consultation générale')
     user_email = data.get('userEmail')
 
+    # Validation des champs
     if not all([medecin_email, date, heure, user_email]):
         print("Données manquantes dans la requête:", {'medecinEmail': medecin_email, 'date': date, 'heure': heure, 'userEmail': user_email})
         return jsonify({'msg': 'Données manquantes'}), 400
 
+    # Vérifier que l'utilisateur est autorisé à créer ce rendez-vous
     if email != user_email:
         print(f"Non autorisé: email utilisateur ({email}) différent de userEmail ({user_email})")
         return jsonify({'msg': 'Non autorisé'}), 403
@@ -284,6 +264,7 @@ def create_rendezvous():
         print(f"Médecin non trouvé: {medecin_email}")
         return jsonify({'msg': 'Médecin non trouvé'}), 404
 
+    # Validation de la date
     try:
         parsed_date = datetime.strptime(date, '%Y-%m-%d')
         day_of_week = parsed_date.weekday()
@@ -295,6 +276,7 @@ def create_rendezvous():
         print(f"Erreur de format de date: {date}, erreur: {str(e)}")
         return jsonify({'msg': 'Format de date invalide'}), 400
 
+    # Validation de l'heure
     try:
         hour = int(heure.split(':')[0])
         minute = int(heure.split(':')[1])
@@ -305,11 +287,16 @@ def create_rendezvous():
         print(f"Erreur de format d'heure: {heure}, erreur: {str(e)}")
         return jsonify({'msg': 'Format d’heure invalide'}), 400
 
+    # Vérification des conflits
     rdv_conflicts = medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', [])
     print(f"Vérification des conflits pour {date} {heure}: {rdv_conflicts}")
-    if any(isinstance(rdv, dict) and rdv.get('date') == date and rdv.get('heure') == heure and rdv.get('statut') in ['accepté', 'en attente'] for rdv in rdv_conflicts):
-        print(f"Conflit détecté pour {date} à {heure}")
-        return jsonify({'msg': 'Créneau déjà réservé'}), 400
+    for rdv in rdv_conflicts:
+        if not isinstance(rdv, dict):
+            print(f"Donnée mal formée dans rendezVousConfirmes ou rendezVousDemandes: {rdv}")
+            continue
+        if rdv.get('date') == date and rdv.get('heure') == heure and rdv.get('statut') in ['accepté', 'en attente']:
+            print(f"Conflit détecté pour {date} à {heure}")
+            return jsonify({'msg': 'Créneau déjà réservé'}), 400
 
     rdv_user = {'medecinId': medecin_email, 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
     rdv_medecin = {'userEmail': user_email, 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
@@ -333,7 +320,7 @@ def create_rendezvous():
         return jsonify({'msg': 'Rendez-vous demandé avec succès'}), 200
     except Exception as e:
         print(f"Erreur lors de l'insertion dans MongoDB: {str(e)}")
-        raise e
+        return jsonify({'msg': 'Erreur serveur interne', 'error': str(e)}), 500
 
 # Gérer les rendez-vous
 @app.route('/api/medecin/rendezvous/<action>', methods=['PUT'])
@@ -341,9 +328,15 @@ def create_rendezvous():
 def manage_rendezvous(action):
     email = get_jwt_identity()
     data = request.get_json()
+    print(f"Données reçues pour gestion rendez-vous ({action}): {data}")
+
+    # Validation des données
     user_email = data.get('userEmail')
     date = data.get('date')
     heure = data.get('heure')
+    if not all([user_email, date, heure]):
+        print(f"Données manquantes pour gérer le rendez-vous: userEmail={user_email}, date={date}, heure={heure}")
+        return jsonify({'msg': 'Données manquantes : userEmail, date ou heure requis'}), 400
 
     medecin = medecins_collection.find_one({'email': email})
     if not medecin:
@@ -352,7 +345,17 @@ def manage_rendezvous(action):
 
     print(f"Gestion du rendez-vous pour {user_email} le {date} à {heure} par {email}")
 
-    rdv = next((r for r in medecin.get('rendezVousDemandes', []) if r['userEmail'] == user_email and r['date'] == date and r['heure'] == heure), None)
+    # Recherche du rendez-vous avec validation
+    rdv = None
+    rendez_vous_demandes = medecin.get('rendezVousDemandes', [])
+    for r in rendez_vous_demandes:
+        if not isinstance(r, dict):
+            print(f"Donnée mal formée dans rendezVousDemandes: {r}")
+            continue
+        if r.get('userEmail') == user_email and r.get('date') == date and r.get('heure') == heure:
+            rdv = r
+            break
+
     if not rdv:
         print(f"Rendez-vous non trouvé pour {user_email} le {date} à {heure}")
         return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
@@ -402,6 +405,7 @@ def manage_rendezvous(action):
         )
         print(f"Rendez-vous refusé pour {user_email} le {date} à {heure}")
         return jsonify({'msg': 'Rendez-vous refusé'}), 200
+    print(f"Action non reconnue: {action}")
     return jsonify({'msg': 'Action non reconnue'}), 400
 
 # Téléverser un document
@@ -413,6 +417,10 @@ def upload_document():
     nom = data.get('nom')
     url = data.get('url')
     medecin_email = data.get('medecinEmail')
+
+    if not all([nom, url, medecin_email]):
+        print(f"Données manquantes pour téléverser le document: nom={nom}, url={url}, medecinEmail={medecin_email}")
+        return jsonify({'msg': 'Données manquantes : nom, url ou medecinEmail requis'}), 400
 
     document = {'nom': nom, 'url': url, 'medecinEmail': medecin_email, 'timestamp': datetime.utcnow().isoformat()}
     users_collection.update_one(

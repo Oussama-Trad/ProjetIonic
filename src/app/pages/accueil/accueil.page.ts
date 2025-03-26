@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+import { User } from '../../interfaces/user.interface';
 
 @Component({
   selector: 'app-accueil',
@@ -9,89 +10,68 @@ import { AuthService } from '../../services/auth.service';
   standalone: false
 })
 export class AccueilPage implements OnInit {
-  isLoggedIn: boolean = false;
-  role: string | null = null;
-  user: any = {};
-  searchQuery: string = ''; // Variable pour le champ de recherche
-  allMedecins: any[] = [];
-  filteredMedecins: any[] = [];
+  user: User = {} as User;
+  notifications: { message: string; date: string; lue: boolean }[] = [];
+  randomMedecins: any[] = [];
+  email: string | null = null;
 
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private cdr: ChangeDetectorRef
-  ) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
-    this.authService.isLoggedIn$.subscribe((loggedIn) => {
-      this.isLoggedIn = loggedIn;
-      this.role = localStorage.getItem('role');
-      console.log('Utilisateur connecté ?', this.isLoggedIn, 'Rôle :', this.role);
-      if (loggedIn && this.role === 'patient') {
-        const email = localStorage.getItem('email');
-        if (email) {
-          this.authService.getUser(email).subscribe({
-            next: (response: any) => {
-              this.user = response;
-              console.log('Utilisateur chargé :', this.user);
-            },
-            error: (err) => console.error('Erreur chargement utilisateur :', err),
-          });
-        }
-        this.loadAllMedecins();
-      } else if (this.role === 'medecin') {
-        this.router.navigate(['/accueil-medecin']);
-      } else if (!loggedIn) {
-        this.loadAllMedecins(); // Charger les médecins même si non connecté
-      }
-    });
+    this.email = localStorage.getItem('email');
+    if (this.email) {
+      this.loadUserData(this.email);
+      this.loadNotifications(this.email);
+      this.loadRandomMedecins();
+    } else {
+      console.error('Email non trouvé dans localStorage');
+      this.router.navigate(['/login']);
+    }
   }
 
-  loadAllMedecins() {
-    this.authService.getAllMedecins(this.searchQuery).subscribe({
-      next: (response: any) => {
-        this.allMedecins = Array.isArray(response) ? response : [];
-        this.filteredMedecins = [...this.allMedecins];
-        console.log('Tous les médecins chargés :', this.allMedecins.map(m => ({
-          prenom: m.prenom,
-          nom: m.nom,
-          email: m.email,
-          specialite: m.specialite,
-          adresse: m.adresse
-        })));
-        this.cdr.detectChanges();
+  loadUserData(email: string) {
+    this.authService.getUser(email).subscribe({
+      next: (response) => {
+        this.user = response;
+        console.log('Utilisateur chargé :', this.user);
       },
       error: (err) => {
-        console.error('Erreur chargement tous les médecins :', err);
-        this.allMedecins = [];
-        this.filteredMedecins = [];
-        this.cdr.detectChanges();
+        console.error('Erreur lors du chargement des données utilisateur :', err);
+        this.router.navigate(['/login']);
       },
     });
   }
 
-  searchMedecins() {
-    console.log('Recherche avec query :', this.searchQuery);
-    this.loadAllMedecins(); // Recharger avec la nouvelle recherche
+  loadNotifications(email: string) {
+    this.authService.getNotifications(email).subscribe({
+      next: (response) => {
+        this.notifications = response.notifications || [];
+        console.log('Notifications chargées :', this.notifications);
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des notifications :', err);
+      },
+    });
   }
 
-  bookRendezVous(medecinEmail: string) {
-    console.log('Clic sur médecin, email reçu :', medecinEmail);
-    if (!medecinEmail) {
-      console.error('Erreur : medecinEmail est vide ou invalide');
-      alert('Erreur : Aucun email de médecin détecté.');
-      return;
-    }
-    if (!this.isLoggedIn) {
-      console.log('Utilisateur non connecté, redirection vers login');
-      this.router.navigate(['/login']);
-    } else {
-      console.log('Redirection vers rendez-vous avec email :', medecinEmail);
-      this.router.navigate(['/rendez-vous'], { queryParams: { medecinEmail } });
-    }
+  loadRandomMedecins() {
+    this.authService.getAllMedecins().subscribe({
+      next: (response) => {
+        const medecins = response || [];
+        this.randomMedecins = medecins.sort(() => 0.5 - Math.random()).slice(0, 3);
+        console.log('Médecins aléatoires chargés :', this.randomMedecins);
+      },
+      error: (err) => {
+        console.error('Erreur lors du chargement des médecins :', err);
+      },
+    });
   }
 
-  goToLogin() {
-    this.router.navigate(['/login']);
+  goToRendezVous() {
+    this.router.navigate(['/rendez-vous']);
+  }
+
+  goToMedecinCalendar(medecinEmail: string) {
+    this.router.navigate(['/rendez-vous'], { queryParams: { medecinEmail } });
   }
 }

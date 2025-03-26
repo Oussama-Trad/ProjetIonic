@@ -1,34 +1,34 @@
 <app-header></app-header>
 
-<ion-content class="ion-padding">
+<ion-content>
   <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
       <ion-card-title>Bienvenue, Dr. {{ medecin.prenom }} {{ medecin.nom }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
+      <h2>Rendez-vous demandés</h2>
       <ion-list>
-        <ion-list-header>Rendez-vous demandés</ion-list-header>
         <ion-item *ngFor="let rdv of rendezVousDemandes" [color]="rdv.statut === 'en attente' ? 'warning' : 'danger'">
           <ion-label>
             <h3>{{ rdv.date }} à {{ rdv.heure }} - {{ rdv.motif }}</h3>
             <p>Patient: {{ rdv.userEmail }}</p>
             <p>Statut: {{ rdv.statut }}</p>
           </ion-label>
-          <ion-button slot="end" (click)="viewDocuments(rdv.userEmail)">Docs</ion-button>
-          <ion-button slot="end" (click)="manageRendezVous(rdv, 'accept')">Accepter</ion-button>
-          <ion-button slot="end" (click)="manageRendezVous(rdv, 'reject')">Refuser</ion-button>
+          <ion-button slot="end" (click)="viewDocuments(rdv.userEmail)">DOCS</ion-button>
+          <ion-button slot="end" (click)="manageRendezVous(rdv, 'accept')">ACCEPTER</ion-button>
+          <ion-button slot="end" (click)="manageRendezVous(rdv, 'refuse')">REFUSER</ion-button>
         </ion-item>
       </ion-list>
 
+      <h2>Rendez-vous confirmés</h2>
       <ion-list>
-        <ion-list-header>Rendez-vous confirmés</ion-list-header>
         <ion-item *ngFor="let rdv of rendezVousConfirmes" color="success">
           <ion-label>
             <h3>{{ rdv.date }} à {{ rdv.heure }} - {{ rdv.motif }}</h3>
             <p>Patient: {{ rdv.userEmail }}</p>
+            <p>Statut: {{ rdv.statut }}</p>
           </ion-label>
-          <ion-button slot="end" (click)="viewDocuments(rdv.userEmail)">Docs</ion-button>
-          <ion-button slot="end" (click)="cancelRendezVous(rdv)">Annuler</ion-button>
+          <ion-button slot="end" (click)="manageRendezVous(rdv, 'cancel')">Annuler</ion-button>
           <ion-button slot="end" (click)="addConsultation(rdv)">Consultation</ion-button>
         </ion-item>
       </ion-list>
@@ -37,13 +37,12 @@
 
   <ion-card *ngIf="!isLoggedIn || role !== 'medecin'">
     <ion-card-header>
-      <ion-card-title>Accès refusé</ion-card-title>
+      <ion-card-title>Accès non autorisé</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <p>Cette page est réservée aux médecins.</p>
+      <p>Veuillez vous connecter en tant que médecin pour accéder à cette page.</p>
       <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
     </ion-card-content>
   </ion-card>
-
-  
 </ion-content>
+

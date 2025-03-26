@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
+import { User } from '../interfaces/user.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -107,38 +108,20 @@ export class AuthService {
     );
   }
 
-  getUser(email: string): Observable<any> {
+  getUser(email: string): Observable<User> {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('Aucun token trouvé pour getUser');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
-    if (!this.http) {
-      console.error('Erreur : HttpClient n’est pas disponible dans getUser');
-      return throwError(() => new Error('HttpClient non injecté'));
-    }
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     console.log('Récupération utilisateur pour email :', email);
-    console.log('En-tête Authorization envoyé :', headers.get('Authorization'));
-    return this.http.get(`${this.apiUrl}/user?email=${email}`, { headers }).pipe(
-      tap((response) => {
-        console.log('Utilisateur récupéré avec succès :', response);
-        // Vérifier les champs nécessaires
-        const requiredFields = ['firstName', 'lastName', 'profilePicture'];
-        requiredFields.forEach(field => {
-          if (!(field in response)) {
-            console.warn(`Champ manquant dans la réponse utilisateur: ${field}`);
-          }
-        });
-      }),
+    return this.http.get<User>(`${this.apiUrl}/user?email=${email}`, { headers }).pipe(
+      tap((response) => console.log('Utilisateur récupéré avec succès :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération de l’utilisateur :', error);
-        console.error('Détails de l’erreur :', error.status, error.statusText, error.error);
-        if (error.status === 401) {
-          console.warn('Erreur 401 détectée, déconnexion initiée');
-          this.logout();
-        }
-        return throwError(() => new Error('Erreur récupération utilisateur'));
+        if (error.status === 401) this.logout();
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération utilisateur'));
       })
     );
   }
@@ -149,32 +132,14 @@ export class AuthService {
       console.warn('Aucun token trouvé pour getMedecin');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
-    if (!this.http) {
-      console.error('Erreur : HttpClient n’est pas disponible dans getMedecin');
-      return throwError(() => new Error('HttpClient non injecté'));
-    }
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     console.log('Récupération médecin pour email :', email);
-    console.log('En-tête Authorization envoyé :', headers.get('Authorization'));
     return this.http.get(`${this.apiUrl}/medecin?email=${email}`, { headers }).pipe(
-      tap((response) => {
-        console.log('Médecin récupéré avec succès :', response);
-        // Vérifier les champs nécessaires
-        const requiredFields = ['prenom', 'nom', 'photoProfil'];
-        requiredFields.forEach(field => {
-          if (!(field in response)) {
-            console.warn(`Champ manquant dans la réponse médecin: ${field}`);
-          }
-        });
-      }),
+      tap((response) => console.log('Médecin récupéré avec succès :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération du médecin :', error);
-        console.error('Détails de l’erreur :', error.status, error.statusText, error.error);
-        if (error.status === 401) {
-          console.warn('Erreur 401 détectée, déconnexion initiée');
-          this.logout();
-        }
-        return throwError(() => new Error('Erreur récupération médecin'));
+        if (error.status === 401) this.logout();
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération médecin'));
       })
     );
   }
@@ -187,16 +152,11 @@ export class AuthService {
       headers,
       params: { search },
     }).pipe(
-      tap((response) => {
-        console.log('Liste des médecins récupérée :', response);
-        if (!Array.isArray(response)) {
-          console.warn('La réponse n’est pas un tableau :', response);
-        }
-      }),
+      tap((response) => console.log('Liste des médecins récupérée :', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des médecins :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur récupération liste médecins'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération liste médecins'));
       })
     );
   }
@@ -238,9 +198,10 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/medecin/rendezvous/${action}`, body, { headers }).pipe(
       tap((response) => console.log(`Rendez-vous ${action} :`, response)),
       catchError((error) => {
-        console.error('Erreur lors de la gestion du rendez-vous :', error);
+        console.error(`Erreur lors de la gestion du rendez-vous (${action}) :`, error);
+        const errorMsg = error.error?.msg || `Échec de l'action ${action} sur le rendez-vous`;
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur gestion rendez-vous'));
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -262,7 +223,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de l’annulation du rendez-vous :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur annulation rendez-vous'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur annulation rendez-vous'));
       })
     );
   }
@@ -283,7 +244,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de l’enregistrement de la consultation :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur enregistrement consultation'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur enregistrement consultation'));
       })
     );
   }
@@ -305,7 +266,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de la consultation :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour consultation'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour consultation'));
       })
     );
   }
@@ -323,7 +284,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la récupération de la consultation :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur récupération consultation'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération consultation'));
       })
     );
   }
@@ -345,7 +306,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors du téléversement du document :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur téléversement document'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur téléversement document'));
       })
     );
   }
@@ -376,7 +337,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de l’utilisateur :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour utilisateur'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour utilisateur'));
       })
     );
   }
@@ -397,7 +358,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de la photo de profil :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour photo de profil'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour photo de profil'));
       })
     );
   }
@@ -418,7 +379,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du compte utilisateur :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour compte utilisateur'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour compte utilisateur'));
       })
     );
   }
@@ -436,7 +397,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la suppression de l’utilisateur :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur suppression utilisateur'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur suppression utilisateur'));
       })
     );
   }
@@ -457,7 +418,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du médecin :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour médecin'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour médecin'));
       })
     );
   }
@@ -478,7 +439,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du compte médecin :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour compte médecin'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour compte médecin'));
       })
     );
   }
@@ -528,7 +489,7 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la mise à jour des paramètres :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur mise à jour paramètres'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour paramètres'));
       })
     );
   }
@@ -546,7 +507,25 @@ export class AuthService {
       catchError((error) => {
         console.error('Erreur lors de la récupération des disponibilités :', error);
         if (error.status === 401) this.logout();
-        return throwError(() => new Error('Erreur récupération disponibilités'));
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération disponibilités'));
+      })
+    );
+  }
+
+  getNotifications(email: string): Observable<User> {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Aucun token trouvé pour getNotifications');
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+    const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
+    console.log('Récupération des notifications pour :', email);
+    return this.http.get<User>(`${this.apiUrl}/user?email=${email}`, { headers }).pipe(
+      tap((response) => console.log('Notifications récupérées :', response.notifications)),
+      catchError((error) => {
+        console.error('Erreur lors de la récupération des notifications :', error);
+        if (error.status === 401) this.logout();
+        return throwError(() => new Error(error.error?.msg || 'Erreur récupération notifications'));
       })
     );
   }

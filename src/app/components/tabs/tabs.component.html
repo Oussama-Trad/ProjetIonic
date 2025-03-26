@@ -1,25 +1,21 @@
 <ion-tabs>
+  <!-- Contenu des pages (les routes sont gérées par le router) -->
   <ion-tab-bar slot="bottom">
-    <ion-tab-button (click)="goToAccueil()" *ngIf="role === 'patient' || !isLoggedIn">
+    <ion-tab-button (click)="goToAccueil()">
       <ion-icon name="home-outline"></ion-icon>
       <ion-label>Accueil</ion-label>
     </ion-tab-button>
-    <ion-tab-button (click)="goToAccueilMedecin()" *ngIf="role === 'medecin'">
-      <ion-icon name="home-outline"></ion-icon>
-      <ion-label>Accueil</ion-label>
-    </ion-tab-button>
-    <ion-tab-button (click)="goToProfile()" *ngIf="isLoggedIn && role === 'patient'">
-      <ion-icon name="person-outline"></ion-icon>
-      <ion-label>Profil</ion-label>
-    </ion-tab-button>
-    <ion-tab-button (click)="goToMedecinProfile()" *ngIf="isLoggedIn && role === 'medecin'">
-      <ion-icon name="person-outline"></ion-icon>
-      <ion-label>Profil</ion-label>
-    </ion-tab-button>
-    <ion-tab-button (click)="goToMedecins()" *ngIf="role === 'patient' || !isLoggedIn">
-      <ion-icon name="medkit-outline"></ion-icon>
+
+    <ion-tab-button (click)="goToMedecins()">
+      <ion-icon name="people-outline"></ion-icon>
       <ion-label>Médecins</ion-label>
     </ion-tab-button>
+
+    <ion-tab-button (click)="goToProfile()">
+      <ion-icon name="person-outline"></ion-icon>
+      <ion-label>Profil</ion-label>
+    </ion-tab-button>
+
     <ion-tab-button (click)="goToParametres()">
       <ion-icon name="settings-outline"></ion-icon>
       <ion-label>Paramètres</ion-label>

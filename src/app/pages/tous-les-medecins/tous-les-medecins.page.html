@@ -1,0 +1,27 @@
+<app-header></app-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Tous les Médecins</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-searchbar [(ngModel)]="searchQuery" (ionInput)="filterMedecins()"></ion-searchbar>
+      <ion-list>
+        <ion-item *ngFor="let medecin of filteredMedecins" (click)="goToMedecinCalendar(medecin.email)">
+          <ion-avatar slot="start">
+            <img [src]="medecin.photoProfil || 'assets/default-avatar.png'" alt="Photo du médecin">
+          </ion-avatar>
+          <ion-label>
+            <h3>{{ medecin.prenom }} {{ medecin.nom }}</h3>
+            <p>{{ medecin.specialite }}</p>
+          </ion-label>
+          <ion-button slot="end">Réserver</ion-button>
+        </ion-item>
+        <ion-item *ngIf="filteredMedecins.length === 0">
+          <ion-label>Aucun médecin trouvé</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

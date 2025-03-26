@@ -1,0 +1,17 @@
+ion-searchbar {
+    --background: #fff;
+    --color: #000;
+    margin-bottom: 20px;
+  }
+  
+  ion-item {
+    --cursor: pointer;
+  
+    &:hover {
+      --background: #f0f0f0;
+    }
+  }
+  
+  ion-list {
+    padding: 10px;
+  }

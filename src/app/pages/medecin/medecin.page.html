@@ -1,70 +1,57 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
+  <ion-card>
     <ion-card-header>
       <ion-card-title>Profil Médecin</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list>
-        <ion-item>
-          <ion-avatar slot="start">
-            <img [src]="medecin.photoProfil || 'assets/default-profile.png'" alt="Photo de profil">
-          </ion-avatar>
-          <ion-label>
-            <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
-            <p>{{ medecin.email }}</p>
-          </ion-label>
-        </ion-item>
-        <ion-item>
-          <ion-label>Téléphone</ion-label>
-          <ion-input [(ngModel)]="medecin.numeroTelephone" [disabled]="!isEditing"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-label>Adresse</ion-label>
-          <ion-input [(ngModel)]="medecin.adresse" [disabled]="!isEditing"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-label>Date de naissance</ion-label>
-          <ion-input [(ngModel)]="medecin.dateDeNaissance" [disabled]="!isEditing"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-label>Genre</ion-label>
-          <ion-input [(ngModel)]="medecin.genre" [disabled]="!isEditing"></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-label>Spécialité</ion-label>
-          <ion-input [(ngModel)]="medecin.specialite" [disabled]="!isEditing"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="isEditing">
-          <ion-label>Changer le mot de passe</ion-label>
-          <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>
-        </ion-item>
-        <ion-item *ngIf="isEditing && changePassword">
-          <ion-label position="floating">Ancien mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword"></ion-input>
-        </ion-item>
-        <ion-item *ngIf="isEditing && changePassword">
-          <ion-label position="floating">Nouveau mot de passe</ion-label>
-          <ion-input type="password" [(ngModel)]="newPassword" name="newPassword"></ion-input>
-        </ion-item>
-      </ion-list>
+      <ion-item>
+        <ion-avatar slot="start">
+          <img [src]="medecin.photoProfil || 'assets/default-avatar.png'" alt="Photo de profil">
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ medecin.prenom }} {{ medecin.nom }}</h2>
+          <p>{{ medecin.specialite }}</p>
+          <p>{{ medecin.email }}</p>
+        </ion-label>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Adresse</ion-label>
+        <ion-label slot="end">{{ medecin.adresse || 'Non spécifiée' }}</ion-label>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Genre</ion-label>
+        <ion-input [(ngModel)]="medecin.genre" [disabled]="!isEditing"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Spécialité</ion-label>
+        <ion-input [(ngModel)]="medecin.specialite" [disabled]="!isEditing"></ion-input>
+      </ion-item>
+
+      <ion-item *ngIf="isEditing">
+        <ion-label>Changer le mot de passe</ion-label>
+        <ion-checkbox slot="end" [(ngModel)]="changePassword" (ionChange)="togglePasswordFields()"></ion-checkbox>
+      </ion-item>
+
+      <ion-item *ngIf="isEditing && changePassword">
+        <ion-label position="floating">Ancien mot de passe</ion-label>
+        <ion-input type="password" [(ngModel)]="oldPassword" name="oldPassword"></ion-input>
+      </ion-item>
+
+      <ion-item *ngIf="isEditing && changePassword">
+        <ion-label position="floating">Nouveau mot de passe</ion-label>
+        <ion-input type="password" [(ngModel)]="newPassword" name="newPassword"></ion-input>
+      </ion-item>
 
       <ion-button *ngIf="!isEditing" expand="block" (click)="toggleEdit()">Modifier</ion-button>
       <ion-button *ngIf="isEditing" expand="block" (click)="saveChanges()">Sauvegarder</ion-button>
       <ion-button *ngIf="isEditing" expand="block" color="light" (click)="cancelEdit()">Annuler</ion-button>
+
+      <ion-button expand="block" (click)="goToAccueilMedecin()">Tableau de bord</ion-button>
     </ion-card-content>
   </ion-card>
-
-  <ion-card *ngIf="!isLoggedIn || role !== 'medecin'">
-    <ion-card-header>
-      <ion-card-title>Accès refusé</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <p>Cette page est réservée aux médecins.</p>
-      <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
-    </ion-card-content>
-  </ion-card>
-
-
 </ion-content>

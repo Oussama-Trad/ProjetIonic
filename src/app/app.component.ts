@@ -7,7 +7,7 @@ import { MenuController } from '@ionic/angular';
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  standalone:false
+  standalone: false
 })
 export class AppComponent {
   isLoggedIn: boolean = false;
@@ -35,12 +35,18 @@ export class AppComponent {
   }
 
   goToAccueil() {
-    this.router.navigate(['/accueil']);
+    this.router.navigate(['/tabs/accueil']);
     this.menuCtrl.close('mainMenu');
   }
 
   goToProfile() {
-    this.router.navigate(['/home']);
+    if (this.role === 'patient') {
+      this.router.navigate(['/tabs/home']);
+    } else if (this.role === 'medecin') {
+      this.router.navigate(['/medecin']);
+    } else {
+      this.router.navigate(['/login']);
+    }
     this.menuCtrl.close('mainMenu');
   }
 
@@ -70,7 +76,7 @@ export class AppComponent {
   }
 
   goToParametres() {
-    this.router.navigate(['/parametres']);
+    this.router.navigate(['/tabs/parametres']);
     this.menuCtrl.close('mainMenu');
   }
 

@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { FlatESLint } from 'eslint/use-at-your-own-risk';
 
 @Component({
   selector: 'app-tabs',
   templateUrl: './tabs.component.html',
   styleUrls: ['./tabs.component.scss'],
-  standalone:false
+  standalone: false,
 })
 export class TabsComponent {
   isLoggedIn: boolean = false;
@@ -17,38 +16,39 @@ export class TabsComponent {
     this.authService.isLoggedIn$.subscribe((loggedIn) => {
       this.isLoggedIn = loggedIn;
       this.role = localStorage.getItem('role');
+      console.log('TabsComponent - isLoggedIn:', this.isLoggedIn, 'role:', this.role);
     });
   }
 
   goToAccueil() {
-    this.router.navigate(['/accueil']);
-  }
-
-  goToAccueilMedecin() {
-    this.router.navigate(['/accueil-medecin']);
-  }
-
-  goToProfile() {
-    if (this.isLoggedIn) {
-      this.router.navigate(['/home']);
-    } else {
-      this.router.navigate(['/login']);
-    }
-  }
-
-  goToMedecinProfile() {
-    if (this.isLoggedIn) {
-      this.router.navigate(['/medecin']);
-    } else {
-      this.router.navigate(['/login']);
-    }
+    console.log('Navigation vers Accueil');
+    this.router.navigate(['/tabs/accueil']);
   }
 
   goToMedecins() {
-    this.router.navigate(['/accueil']); // Liste des médecins
+    console.log('Navigation vers Tous les Médecins');
+    this.router.navigate(['/tabs/tous-les-medecins']);
+  }
+
+  goToProfile() {
+    console.log('Navigation vers Profil');
+    if (this.isLoggedIn) {
+      if (this.role === 'patient') {
+        this.router.navigate(['/tabs/home']);
+      } else if (this.role === 'medecin') {
+        this.router.navigate(['/medecin']);
+      }
+    } else {
+      this.router.navigate(['/login']);
+    }
   }
 
   goToParametres() {
-    this.router.navigate(['/parametres']);
+    console.log('Navigation vers Paramètres');
+    if (this.isLoggedIn) {
+      this.router.navigate(['/tabs/parametres']);
+    } else {
+      this.router.navigate(['/login']);
+    }
   }
 }

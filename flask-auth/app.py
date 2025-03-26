@@ -140,12 +140,11 @@ def get_user():
     user = users_collection.find_one({'email': email}, {'_id': 0, 'password': 0})
     if user:
         print(f"Utilisateur trouvé: {email}, données: {user}")
-        # Vérifier que les champs nécessaires sont présents
         required_fields = ['firstName', 'lastName', 'profilePicture']
         for field in required_fields:
             if field not in user:
                 print(f"Champ manquant dans les données utilisateur: {field}")
-                user[field] = ''  # Ajouter une valeur par défaut si le champ est manquant
+                user[field] = ''
         return jsonify(user), 200
     print(f"Utilisateur non trouvé: {email}")
     return jsonify({'msg': 'Utilisateur non trouvé'}), 404
@@ -161,13 +160,11 @@ def update_user():
         print(f"Accès non autorisé: identité ({email}) ne correspond pas à l'email dans les données ({data.get('email')})")
         return jsonify({'msg': 'Accès non autorisé'}), 403
     
-    # Récupérer le rôle depuis le token JWT
     token = request.headers.get('Authorization').split('Bearer ')[1]
     decoded_token = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
     role = decoded_token.get('role')
     print(f"Rôle extrait du token: {role}")
 
-    # Choisir la collection en fonction du rôle
     collection = medecins_collection if role == 'medecin' else users_collection
     
     update_data = {
@@ -181,7 +178,6 @@ def update_user():
         'photoProfil': data.get('photoProfil') if role == 'medecin' else None
     }
     
-    # Supprimer les champs None pour ne pas écraser les valeurs existantes avec None
     update_data = {k: v for k, v in update_data.items() if v is not None}
     print(f"Données à mettre à jour: {update_data}")
     
@@ -214,12 +210,11 @@ def get_medecin():
     target_medecin = medecins_collection.find_one({'email': email}, {'_id': 0, 'motDePasse': 0})
     if target_medecin:
         print(f"Médecin trouvé pour {email} par {identity}, données: {target_medecin}")
-        # Vérifier que les champs nécessaires sont présents
         required_fields = ['prenom', 'nom', 'photoProfil']
         for field in required_fields:
             if field not in target_medecin:
                 print(f"Champ manquant dans les données médecin: {field}")
-                target_medecin[field] = ''  # Ajouter une valeur par défaut si le champ est manquant
+                target_medecin[field] = ''
         return jsonify(target_medecin), 200
     print(f"Médecin non trouvé: {email}")
     return jsonify({'msg': 'Médecin non trouvé'}), 404
@@ -352,12 +347,14 @@ def manage_rendezvous(action):
 
     medecin = medecins_collection.find_one({'email': email})
     if not medecin:
+        print(f"Médecin non trouvé: {email}")
         return jsonify({'msg': 'Médecin non trouvé'}), 404
-    if medecin.get('role') != 'medecin':
-        return jsonify({'msg': 'Accès réservé aux médecins'}), 403
+
+    print(f"Gestion du rendez-vous pour {user_email} le {date} à {heure} par {email}")
 
     rdv = next((r for r in medecin.get('rendezVousDemandes', []) if r['userEmail'] == user_email and r['date'] == date and r['heure'] == heure), None)
     if not rdv:
+        print(f"Rendez-vous non trouvé pour {user_email} le {date} à {heure}")
         return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
 
     if action == 'accept':
@@ -382,8 +379,9 @@ def manage_rendezvous(action):
             },
             array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
         )
+        print(f"Rendez-vous accepté pour {user_email} le {date} à {heure}")
         return jsonify({'msg': 'Rendez-vous accepté'}), 200
-    elif action == 'cancel':
+    elif action == 'refuse':
         medecins_collection.update_one(
             {'email': email},
             {'$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}}}
@@ -391,10 +389,10 @@ def manage_rendezvous(action):
         users_collection.update_one(
             {'email': user_email},
             {
-                '$set': {'rendezVousFuturs.$[elem].statut': 'annulé'},
+                '$set': {'rendezVousFuturs.$[elem].statut': 'refusé'},
                 '$push': {
                     'notifications': {
-                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été annulé',
+                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été refusé',
                         'date': datetime.utcnow().isoformat(),
                         'lue': False
                     }
@@ -402,7 +400,8 @@ def manage_rendezvous(action):
             },
             array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
         )
-        return jsonify({'msg': 'Rendez-vous annulé'}), 200
+        print(f"Rendez-vous refusé pour {user_email} le {date} à {heure}")
+        return jsonify({'msg': 'Rendez-vous refusé'}), 200
     return jsonify({'msg': 'Action non reconnue'}), 400
 
 # Téléverser un document
@@ -432,6 +431,7 @@ def upload_document():
             }
         }
     )
+    print(f"Document téléversé par {email} pour {medecin_email}: {nom}")
     return jsonify({'msg': 'Document téléversé'}), 201
 
 # Mettre à jour les paramètres

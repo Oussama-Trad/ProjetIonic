@@ -15,10 +15,12 @@ import { DocumentsPage } from './pages/documents/documents.page';
 import { ConsultationPage } from './pages/consultation/consultation.page';
 import { HistoriquePage } from './pages/historique/historique.page';
 import { ParametresPage } from './pages/parametres/parametres.page';
+import { TousLesMedecinsPage } from './pages/tous-les-medecins/tous-les-medecins.page';
 import { HeaderComponent } from './components/header/header.component';
-import { FormsModule } from '@angular/forms'; // Pour ngModel
-import { HttpClientModule } from '@angular/common/http'; // Pour les appels API
-import { CommonModule } from '@angular/common'; // Pour ngIf, ngFor, etc.
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+
 
 @NgModule({
   declarations: [
@@ -35,17 +37,19 @@ import { CommonModule } from '@angular/common'; // Pour ngIf, ngFor, etc.
     ConsultationPage,
     HistoriquePage,
     ParametresPage,
-    HeaderComponent
+    TousLesMedecinsPage,
+    HeaderComponent,
+
   ],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
     AppRoutingModule,
-    FormsModule,
+    FormsModule, // Pour ngModel
     HttpClientModule,
-    CommonModule
+    CommonModule, // Pour le pipe date et ngClass
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA], // Pour ignorer les erreurs sur les composants Ionic personnalisés
-  bootstrap: [AppComponent]
+  schemas: [CUSTOM_ELEMENTS_SCHEMA], // Pour les composants Web Ionic
+  bootstrap: [AppComponent],
 })
 export class AppModule {}

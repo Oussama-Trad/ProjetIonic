@@ -63,7 +63,6 @@ def register():
     data = request.get_json()
     print(f"Données reçues pour inscription: {data}")
 
-    # Validation des champs requis
     required_fields = ['email', 'password', 'firstName', 'lastName', 'phoneNumber', 'birthDate', 'address', 'gender']
     for field in required_fields:
         if not data.get(field):
@@ -244,13 +243,12 @@ def create_rendezvous():
     heure = data.get('heure')
     motif = data.get('motif', 'Consultation générale')
     user_email = data.get('userEmail')
+    document = data.get('document', None)  # Document optionnel
 
-    # Validation des champs
     if not all([medecin_email, date, heure, user_email]):
         print("Données manquantes dans la requête:", {'medecinEmail': medecin_email, 'date': date, 'heure': heure, 'userEmail': user_email})
         return jsonify({'msg': 'Données manquantes'}), 400
 
-    # Vérifier que l'utilisateur est autorisé à créer ce rendez-vous
     if email != user_email:
         print(f"Non autorisé: email utilisateur ({email}) différent de userEmail ({user_email})")
         return jsonify({'msg': 'Non autorisé'}), 403
@@ -264,11 +262,9 @@ def create_rendezvous():
         print(f"Médecin non trouvé: {medecin_email}")
         return jsonify({'msg': 'Médecin non trouvé'}), 404
 
-    # Validation de la date
     try:
         parsed_date = datetime.strptime(date, '%Y-%m-%d')
         day_of_week = parsed_date.weekday()
-        print(f"Date {date} validée, jour de la semaine: {day_of_week}")
         if day_of_week >= 5:
             print(f"Date {date} est un week-end")
             return jsonify({'msg': 'Pas de disponibilité le week-end'}), 400
@@ -276,7 +272,6 @@ def create_rendezvous():
         print(f"Erreur de format de date: {date}, erreur: {str(e)}")
         return jsonify({'msg': 'Format de date invalide'}), 400
 
-    # Validation de l'heure
     try:
         hour = int(heure.split(':')[0])
         minute = int(heure.split(':')[1])
@@ -287,20 +282,20 @@ def create_rendezvous():
         print(f"Erreur de format d'heure: {heure}, erreur: {str(e)}")
         return jsonify({'msg': 'Format d’heure invalide'}), 400
 
-    # Vérification des conflits
     rdv_conflicts = medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', [])
-    print(f"Vérification des conflits pour {date} {heure}: {rdv_conflicts}")
     for rdv in rdv_conflicts:
-        if not isinstance(rdv, dict):
-            print(f"Donnée mal formée dans rendezVousConfirmes ou rendezVousDemandes: {rdv}")
-            continue
         if rdv.get('date') == date and rdv.get('heure') == heure and rdv.get('statut') in ['accepté', 'en attente']:
             print(f"Conflit détecté pour {date} à {heure}")
             return jsonify({'msg': 'Créneau déjà réservé'}), 400
 
     rdv_user = {'medecinId': medecin_email, 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
+    if document:
+        rdv_user['document'] = document
+
     rdv_medecin = {'userEmail': user_email, 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
-    
+    if document:
+        rdv_medecin['document'] = document
+
     try:
         users_collection.update_one({'email': user_email}, {'$push': {'rendezVousFuturs': rdv_user}})
         medecins_collection.update_one({'email': medecin_email}, {'$push': {'rendezVousDemandes': rdv_medecin}})
@@ -309,9 +304,25 @@ def create_rendezvous():
             {
                 '$push': {
                     'notifications': {
+                        'id': str(ObjectId()),
                         'message': f'Rendez-vous demandé avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure}',
                         'date': datetime.utcnow().isoformat(),
-                        'lue': False
+                        'lue': False,
+                        'type': 'rendezvous_demande'
+                    }
+                }
+            }
+        )
+        medecins_collection.update_one(
+            {'email': medecin_email},
+            {
+                '$push': {
+                    'notifications': {
+                        'id': str(ObjectId()),
+                        'message': f'Nouvelle demande de rendez-vous de {user["firstName"]} {user["lastName"]} le {date} à {heure}',
+                        'date': datetime.utcnow().isoformat(),
+                        'lue': False,
+                        'type': 'rendezvous_demande'
                     }
                 }
             }
@@ -330,34 +341,21 @@ def manage_rendezvous(action):
     data = request.get_json()
     print(f"Données reçues pour gestion rendez-vous ({action}): {data}")
 
-    # Validation des données
     user_email = data.get('userEmail')
     date = data.get('date')
     heure = data.get('heure')
     if not all([user_email, date, heure]):
-        print(f"Données manquantes pour gérer le rendez-vous: userEmail={user_email}, date={date}, heure={heure}")
-        return jsonify({'msg': 'Données manquantes : userEmail, date ou heure requis'}), 400
+        print(f"Données manquantes: userEmail={user_email}, date={date}, heure={heure}")
+        return jsonify({'msg': 'Données manquantes'}), 400
 
     medecin = medecins_collection.find_one({'email': email})
     if not medecin:
         print(f"Médecin non trouvé: {email}")
         return jsonify({'msg': 'Médecin non trouvé'}), 404
 
-    print(f"Gestion du rendez-vous pour {user_email} le {date} à {heure} par {email}")
-
-    # Recherche du rendez-vous avec validation
-    rdv = None
-    rendez_vous_demandes = medecin.get('rendezVousDemandes', [])
-    for r in rendez_vous_demandes:
-        if not isinstance(r, dict):
-            print(f"Donnée mal formée dans rendezVousDemandes: {r}")
-            continue
-        if r.get('userEmail') == user_email and r.get('date') == date and r.get('heure') == heure:
-            rdv = r
-            break
-
+    rdv = next((r for r in medecin.get('rendezVousDemandes', []) if r.get('userEmail') == user_email and r.get('date') == date and r.get('heure') == heure), None)
     if not rdv:
-        print(f"Rendez-vous non trouvé pour {user_email} le {date} à {heure}")
+        print(f"Rendez-vous non trouvé: {user_email}, {date}, {heure}")
         return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
 
     if action == 'accept':
@@ -374,15 +372,17 @@ def manage_rendezvous(action):
                 '$set': {'rendezVousFuturs.$[elem].statut': 'accepté'},
                 '$push': {
                     'notifications': {
+                        'id': str(ObjectId()),
                         'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été accepté',
                         'date': datetime.utcnow().isoformat(),
-                        'lue': False
+                        'lue': False,
+                        'type': 'rendezvous_accepte'
                     }
                 }
             },
             array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
         )
-        print(f"Rendez-vous accepté pour {user_email} le {date} à {heure}")
+        print(f"Rendez-vous accepté: {user_email}, {date}, {heure}")
         return jsonify({'msg': 'Rendez-vous accepté'}), 200
     elif action == 'refuse':
         medecins_collection.update_one(
@@ -392,18 +392,20 @@ def manage_rendezvous(action):
         users_collection.update_one(
             {'email': user_email},
             {
-                '$set': {'rendezVousFuturs.$[elem].statut': 'refusé'},
+                '$pull': {'rendezVousFuturs': {'medecinId': email, 'date': date, 'heure': heure}},
                 '$push': {
+                    'historiqueRendezVous': {**rdv, 'statut': 'refusé'},
                     'notifications': {
+                        'id': str(ObjectId()),
                         'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été refusé',
                         'date': datetime.utcnow().isoformat(),
-                        'lue': False
+                        'lue': False,
+                        'type': 'rendezvous_refuse'
                     }
                 }
-            },
-            array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
+            }
         )
-        print(f"Rendez-vous refusé pour {user_email} le {date} à {heure}")
+        print(f"Rendez-vous refusé: {user_email}, {date}, {heure}")
         return jsonify({'msg': 'Rendez-vous refusé'}), 200
     print(f"Action non reconnue: {action}")
     return jsonify({'msg': 'Action non reconnue'}), 400
@@ -432,9 +434,11 @@ def upload_document():
         {
             '$push': {
                 'notifications': {
+                    'id': str(ObjectId()),
                     'message': f"{email} vous a envoyé le document '{nom}'",
                     'date': datetime.utcnow().isoformat(),
-                    'lue': False
+                    'lue': False,
+                    'type': 'document_envoye'
                 }
             }
         }
@@ -511,6 +515,35 @@ def get_medecin_disponibilites():
     }
     print(f"Disponibilités récupérées pour {email}: {disponibilites}")
     return jsonify(disponibilites), 200
+
+# Marquer une notification comme lue
+@app.route('/api/user/notification/mark-as-read', methods=['PUT'])
+@jwt_required()
+def mark_notification_as_read():
+    email = get_jwt_identity()
+    data = request.get_json()
+    notification_id = data.get('notificationId')
+
+    if not notification_id:
+        print(f"notificationId manquant pour marquer comme lue: {data}")
+        return jsonify({'msg': 'notificationId manquant'}), 400
+
+    result = users_collection.update_one(
+        {'email': email, 'notifications.id': notification_id},
+        {'$set': {'notifications.$.lue': True}}
+    )
+    if result.modified_count == 0:
+        result = medecins_collection.update_one(
+            {'email': email, 'notifications.id': notification_id},
+            {'$set': {'notifications.$.lue': True}}
+        )
+
+    if result.modified_count > 0:
+        print(f"Notification marquée comme lue pour {email}: {notification_id}")
+        return jsonify({'msg': 'Notification marquée comme lue'}), 200
+    else:
+        print(f"Notification non trouvée pour {email}: {notification_id}")
+        return jsonify({'msg': 'Notification non trouvée'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

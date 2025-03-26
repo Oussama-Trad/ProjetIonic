@@ -72,4 +72,22 @@
 
   <!-- Tabs en bas -->
   <app-tabs></app-tabs>
+
+  <!-- Dropdown des notifications au niveau racine -->
+  <div class="notification-dropdown" *ngIf="showNotifications" #notificationDropdown>
+    <ion-list>
+      <ion-item *ngFor="let notification of notifications" [ngClass]="{'unread': !notification.lue}">
+        <ion-label>
+          <p>{{ notification.message }}</p>
+          <p class="date">{{ notification.date | date:'short' }}</p>
+        </ion-label>
+        <ion-button slot="end" *ngIf="!notification.lue" (click)="markNotificationAsRead(notification.id)">
+          Marquer comme lue
+        </ion-button>
+      </ion-item>
+      <ion-item *ngIf="notifications.length === 0">
+        <ion-label>Aucune notification</ion-label>
+      </ion-item>
+    </ion-list>
+  </div>
 </ion-app>

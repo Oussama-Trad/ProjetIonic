@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
@@ -15,6 +15,11 @@ export class RendezVousPage implements OnInit {
   selectedDay: string | null = null;
   selectedHeure: string = '';
   disponibilites: any = {};
+  documentName: string = '';
+  documentFile: File | null = null;
+  documentUrl: string | null = null;
+
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   constructor(
     private route: ActivatedRoute,
@@ -153,6 +158,30 @@ export class RendezVousPage implements OnInit {
     this.selectedHeure = '';
   }
 
+  onFileChange(event: any) {
+    this.documentFile = event.target.files[0];
+    if (this.documentFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.documentUrl = reader.result as string;
+      };
+      reader.readAsDataURL(this.documentFile);
+    }
+  }
+
+  uploadDocument() {
+    if (!this.documentFile || !this.documentName) return;
+    this.authService.uploadDocument(this.documentName, this.documentUrl!, this.medecin.email).subscribe({
+      next: () => {
+        console.log('Document téléversé avec succès');
+      },
+      error: (err) => {
+        console.error('Erreur lors du téléversement du document :', err);
+        alert('Erreur lors de l’ajout du document');
+      }
+    });
+  }
+
   createRendezVous() {
     if (!this.selectedDay || !this.selectedHeure) {
       alert('Veuillez sélectionner un jour et un créneau horaire');
@@ -166,14 +195,17 @@ export class RendezVousPage implements OnInit {
       return;
     }
 
-    // Vérification des données avant envoi
-    const rdvData = {
-      medecinEmail: this.medecin.email || this.route.snapshot.queryParamMap.get('medecinEmail'), // Sécurité si this.medecin.email n'est pas encore chargé
+    const rdvData: any = {
+      medecinEmail: this.medecin.email,
       userEmail: userEmail,
       date: this.selectedDay,
       heure: this.selectedHeure,
       motif: 'Consultation générale'
     };
+
+    if (this.documentUrl && this.documentName) {
+      rdvData.document = { nom: this.documentName, url: this.documentUrl };
+    }
 
     console.log('Données envoyées à createRendezVous :', rdvData);
 
@@ -183,7 +215,11 @@ export class RendezVousPage implements OnInit {
         alert('Rendez-vous demandé avec succès !');
         this.selectedDay = null;
         this.selectedHeure = '';
-        this.loadDisponibilites(this.medecin.email || rdvData.medecinEmail);
+        this.documentName = '';
+        this.documentFile = null;
+        this.documentUrl = null;
+        this.fileInput.nativeElement.value = '';
+        this.loadDisponibilites(this.medecin.email);
       },
       error: (err) => {
         console.error('Erreur lors de la création du rendez-vous :', err);
@@ -205,6 +241,6 @@ export class RendezVousPage implements OnInit {
   }
 
   goToAccueil() {
-    this.router.navigate(['/accueil']);
+    this.router.navigate(['/tabs/accueil']);
   }
 }

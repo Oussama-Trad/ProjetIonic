@@ -1,0 +1,20 @@
+ion-item {
+    &.unavailable {
+      --background: #f44336; /* Rouge pour refusé */
+      color: white;
+    }
+  
+    &.accepted {
+      --background: #4caf50; /* Vert pour accepté */
+      color: white;
+    }
+  
+    &.pending {
+      --background: #ffeb3b; /* Jaune pour en attente */
+      color: black;
+    }
+  }
+  
+  ion-list {
+    padding: 10px;
+  }

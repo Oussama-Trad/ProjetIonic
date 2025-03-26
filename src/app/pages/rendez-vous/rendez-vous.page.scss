@@ -16,27 +16,27 @@
     cursor: pointer;
 
     &.available {
-      background-color: #4caf50; // Vert pour les jours disponibles
+      background-color: #4caf50;
       color: white;
     }
 
     &.unavailable {
-      background-color: #f44336; // Rouge pour les jours indisponibles
+      background-color: #f44336;
       color: white;
       cursor: not-allowed;
     }
 
     &.today {
-      border: 2px solid #2196f3; // Bleu pour le jour actuel
+      border: 2px solid #2196f3;
     }
 
     &.selected {
-      border: 2px solid #ffeb3b; // Jaune pour le jour sélectionné
+      border: 2px solid #ffeb3b;
     }
   }
 }
 
-.time-slots {
+.time-slots, .document-upload {
   margin-top: 20px;
   padding: 10px;
 
@@ -44,10 +44,18 @@
     cursor: pointer;
 
     &.unavailable-slot {
-      background-color: #f44336; // Rouge pour les créneaux indisponibles
+      background-color: #f44336;
       color: white;
       cursor: not-allowed;
     }
+  }
+
+  ion-input {
+    margin-bottom: 10px;
+  }
+
+  input[type="file"] {
+    margin: 10px 0;
   }
 }
 

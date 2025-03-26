@@ -1,12 +1,19 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-tabs',
   templateUrl: './tabs.component.html',
   styleUrls: ['./tabs.component.scss'],
-  standalone: false,
+  standalone: true,
+  imports: [
+    IonicModule,
+    CommonModule,
+    RouterModule,
+  ],
 })
 export class TabsComponent {
   isLoggedIn: boolean = false;

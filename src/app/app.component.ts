@@ -1,87 +1,115 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
-import { MenuController } from '@ionic/angular';
+import { NotificationService } from './services/notification.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  standalone: false
+  standalone: false, // Changé à false
 })
 export class AppComponent {
   isLoggedIn: boolean = false;
   role: string | null = null;
+  showNotifications: boolean = false;
+  notifications: any[] = [];
+  unreadNotificationsCount: number = 0;
+
+  @ViewChild('notificationDropdown') notificationDropdown!: ElementRef<HTMLDivElement>;
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private menuCtrl: MenuController
+    private notificationService: NotificationService
   ) {
-    this.authService.isLoggedIn$.subscribe((loggedIn) => {
+    this.authService.isLoggedIn$.subscribe((loggedIn: boolean) => {
       this.isLoggedIn = loggedIn;
       this.role = localStorage.getItem('role');
+      if (loggedIn) {
+        const email = localStorage.getItem('email');
+        if (email) {
+          this.authService.getNotifications(email).subscribe({
+            next: (notifications: any[]) => {
+              this.notificationService.setNotifications(notifications);
+            },
+            error: (err: any) => {
+              console.error('Erreur lors du chargement initial des notifications :', err);
+            },
+          });
+        }
+      }
+    });
+
+    this.notificationService.showNotifications$.subscribe((show: boolean) => {
+      this.showNotifications = show;
+    });
+
+    this.notificationService.notifications$.subscribe((notifications: any[]) => {
+      this.notifications = notifications;
+    });
+
+    this.notificationService.unreadNotificationsCount$.subscribe((count: number) => {
+      this.unreadNotificationsCount = count;
     });
   }
 
   goToLogin() {
     this.router.navigate(['/login']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToRegister() {
     this.router.navigate(['/register']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToAccueil() {
     this.router.navigate(['/tabs/accueil']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToProfile() {
-    if (this.role === 'patient') {
-      this.router.navigate(['/tabs/home']);
-    } else if (this.role === 'medecin') {
-      this.router.navigate(['/medecin']);
-    } else {
-      this.router.navigate(['/login']);
-    }
-    this.menuCtrl.close('mainMenu');
+    this.router.navigate(['/profile']);
   }
 
   goToRendezVous() {
     this.router.navigate(['/rendez-vous']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToDocuments() {
     this.router.navigate(['/documents']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToHistorique() {
     this.router.navigate(['/historique']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToAccueilMedecin() {
     this.router.navigate(['/accueil-medecin']);
-    this.menuCtrl.close('mainMenu');
   }
 
   goToMedecinProfile() {
-    this.router.navigate(['/medecin']);
-    this.menuCtrl.close('mainMenu');
+    this.router.navigate(['/medecin-profile']);
   }
 
   goToParametres() {
     this.router.navigate(['/tabs/parametres']);
-    this.menuCtrl.close('mainMenu');
   }
 
   logout() {
     this.authService.logout();
-    this.menuCtrl.close('mainMenu');
+  }
+
+  markNotificationAsRead(notificationId: string) {
+    this.notificationService.markNotificationAsRead(notificationId);
+    const email = localStorage.getItem('email');
+    if (email) {
+      this.authService.getNotifications(email).subscribe({
+        next: (notifications: any[]) => {
+          this.notificationService.setNotifications(notifications);
+        },
+        error: (err: any) => {
+          console.error('Erreur lors du rechargement des notifications :', err);
+        },
+      });
+    }
   }
 }

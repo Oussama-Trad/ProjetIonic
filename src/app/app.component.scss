@@ -1,0 +1,39 @@
+.notification-dropdown {
+    position: fixed;
+    top: 60px; // Ajustez cette valeur en fonction de la hauteur de votre header
+    right: 10px;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 10000 !important;
+    padding: 5px;
+  
+    ion-list {
+      padding: 0;
+  
+      ion-item {
+        --padding-start: 10px;
+        --padding-end: 10px;
+  
+        &.unread {
+          background-color: #f0f8ff;
+          font-weight: bold;
+        }
+  
+        .date {
+          font-size: 12px;
+          color: #888;
+        }
+  
+        ion-button {
+          --padding-start: 5px;
+          --padding-end: 5px;
+          font-size: 12px;
+        }
+      }
+    }
+  }

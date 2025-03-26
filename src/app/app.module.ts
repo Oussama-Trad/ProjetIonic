@@ -3,7 +3,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { IonicModule } from '@ionic/angular';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { TabsComponent } from './components/tabs/tabs.component';
 import { LoginPage } from './pages/login/login.page';
 import { RegisterPage } from './pages/register/register.page';
 import { HomePage } from './pages/home/home.page';
@@ -20,12 +19,12 @@ import { HeaderComponent } from './components/header/header.component';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-
+import { RouterModule } from '@angular/router';
+import { TabsComponent } from './components/tabs/tabs.component';
 
 @NgModule({
   declarations: [
-    AppComponent,
-    TabsComponent,
+    AppComponent, // Ajoute AppComponent ici
     LoginPage,
     RegisterPage,
     HomePage,
@@ -39,17 +38,19 @@ import { CommonModule } from '@angular/common';
     ParametresPage,
     TousLesMedecinsPage,
     HeaderComponent,
-
   ],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
     AppRoutingModule,
-    FormsModule, // Pour ngModel
+    FormsModule,
     HttpClientModule,
-    CommonModule, // Pour le pipe date et ngClass
+    CommonModule,
+    RouterModule,
+    TabsComponent, // Puisque TabsComponent est standalone, on l'importe ici
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA], // Pour les composants Web Ionic
+  providers: [],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

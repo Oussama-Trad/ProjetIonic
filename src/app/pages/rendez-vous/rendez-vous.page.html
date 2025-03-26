@@ -1,45 +1,55 @@
-<ion-content>
-  <ion-header>
-    <ion-toolbar>
-      <ion-title>Rendez-vous avec {{ medecin.prenom }} {{ medecin.nom }}</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<app-header></app-header>
 
-  <div class="calendar">
-    <div class="calendar-header">
-      <ion-button (click)="previousMonth()">Précédent</ion-button>
-      <span>{{ getMonthYear() }}</span>
-      <ion-button (click)="nextMonth()">Suivant</ion-button>
-    </div>
-    <div class="calendar-grid">
-      <div class="calendar-day-header" *ngFor="let day of ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']">
-        {{ day }}
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Prendre un rendez-vous avec {{ medecin.prenom }} {{ medecin.nom }}</ion-card-title>
+      <ion-card-subtitle>{{ medecin.specialite }}</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="calendar-header">
+        <ion-button (click)="previousMonth()">Précédent</ion-button>
+        <span>{{ getMonthYear() }}</span>
+        <ion-button (click)="nextMonth()">Suivant</ion-button>
       </div>
-      <div class="calendar-day" *ngFor="let day of calendarDays" 
-           [ngClass]="{
-             'available': day.isAvailable,
-             'unavailable': !day.isAvailable,
-             'today': day.isToday,
-             'selected': selectedDay === day.date.toISOString().split('T')[0]
-           }"
-           (click)="selectDay(day)">
-        {{ day.date.getDate() }}
+      <div class="calendar-grid">
+        <div class="calendar-day-header" *ngFor="let day of ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']">
+          {{ day }}
+        </div>
+        <div class="calendar-day" *ngFor="let day of calendarDays" 
+             [ngClass]="{
+               'available': day.isAvailable,
+               'unavailable': !day.isAvailable,
+               'today': day.isToday,
+               'selected': selectedDay === day.date.toISOString().split('T')[0]
+             }"
+             (click)="selectDay(day)">
+          {{ day.date.getDate() }}
+        </div>
       </div>
-    </div>
-  </div>
 
-  <div *ngIf="selectedDay" class="time-slots">
-    <h3>Créneaux disponibles le {{ selectedDay | date:'dd/MM/yyyy' }}</h3>
-    <ion-list>
-      <ion-item *ngFor="let slot of getHoursForSelectedDay()" 
-                [ngClass]="{'unavailable-slot': !slot.disponible}"
-                (click)="slot.disponible && (selectedHeure = slot.heure)">
-        <ion-label>{{ slot.heure }}</ion-label>
-        <ion-icon *ngIf="selectedHeure === slot.heure" name="checkmark-circle" slot="end"></ion-icon>
-      </ion-item>
-    </ion-list>
-    <ion-button expand="block" (click)="createRendezVous()" [disabled]="!selectedHeure">Confirmer</ion-button>
-  </div>
+      <div *ngIf="selectedDay" class="time-slots">
+        <h3>Créneaux disponibles le {{ selectedDay | date:'dd/MM/yyyy' }}</h3>
+        <ion-list>
+          <ion-item *ngFor="let slot of getHoursForSelectedDay()" 
+                    [ngClass]="{'unavailable-slot': !slot.disponible}"
+                    (click)="slot.disponible && (selectedHeure = slot.heure)">
+            <ion-label>{{ slot.heure }}</ion-label>
+            <ion-icon *ngIf="selectedHeure === slot.heure" name="checkmark-circle" slot="end"></ion-icon>
+          </ion-item>
+        </ion-list>
+      </div>
 
-  <ion-button expand="block" (click)="goToAccueil()">Retour à l'accueil</ion-button>
+      <div *ngIf="selectedHeure" class="document-upload">
+        <h3>Ajouter un document (optionnel)</h3>
+        <ion-input placeholder="Nom du document" [(ngModel)]="documentName"></ion-input>
+        <input type="file" accept="image/*,application/pdf" #fileInput (change)="onFileChange($event)" />
+        <ion-button expand="block" (click)="uploadDocument()" [disabled]="!documentFile || !documentName">Ajouter</ion-button>
+        <p *ngIf="documentUrl">Document ajouté : {{ documentName }}</p>
+      </div>
+
+      <ion-button expand="block" (click)="createRendezVous()" [disabled]="!selectedHeure">Confirmer</ion-button>
+      <ion-button expand="block" (click)="goToAccueil()">Retour à l'accueil</ion-button>
+    </ion-card-content>
+  </ion-card>
 </ion-content>

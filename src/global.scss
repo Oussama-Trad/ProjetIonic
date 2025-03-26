@@ -96,3 +96,27 @@
       --color: #fff; /* Boutons en blanc en dark mode */
     }
   }
+  ion-app {
+    overflow: visible !important;
+    z-index: 1 !important;
+  }
+  
+  ion-header {
+    overflow: visible !important;
+    z-index: 5 !important;
+  }
+  
+  ion-toolbar {
+    overflow: visible !important;
+    z-index: 5 !important;
+  }
+  
+  ion-buttons {
+    overflow: visible !important;
+    z-index: 10 !important;
+  }
+  
+  ion-content {
+    --overflow: visible !important;
+    z-index: 1 !important;
+  }

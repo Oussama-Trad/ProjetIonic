@@ -11,7 +11,7 @@ import { User } from '../../interfaces/user.interface';
 })
 export class AccueilPage implements OnInit {
   user: User = {} as User;
-  notifications: { message: string; date: string; lue: boolean }[] = [];
+  notifications: { id: string; message: string; date: string; lue: boolean; type: string }[] = [];
   randomMedecins: any[] = [];
   email: string | null = null;
 
@@ -44,12 +44,13 @@ export class AccueilPage implements OnInit {
 
   loadNotifications(email: string) {
     this.authService.getNotifications(email).subscribe({
-      next: (response) => {
-        this.notifications = response.notifications || [];
+      next: (notifications) => {
+        this.notifications = notifications || [];
         console.log('Notifications chargées :', this.notifications);
       },
       error: (err) => {
         console.error('Erreur lors du chargement des notifications :', err);
+        this.notifications = [];
       },
     });
   }
@@ -63,6 +64,22 @@ export class AccueilPage implements OnInit {
       },
       error: (err) => {
         console.error('Erreur lors du chargement des médecins :', err);
+        this.randomMedecins = [];
+      },
+    });
+  }
+
+  markNotificationAsRead(notificationId: string) {
+    this.authService.markNotificationAsRead(notificationId).subscribe({
+      next: () => {
+        const notification = this.notifications.find((notif) => notif.id === notificationId);
+        if (notification) {
+          notification.lue = true;
+          console.log('Notification marquée comme lue :', notificationId);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur lors du marquage de la notification comme lue :', err);
       },
     });
   }

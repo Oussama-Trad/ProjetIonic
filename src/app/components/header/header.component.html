@@ -5,6 +5,29 @@
     </ion-buttons>
     <ion-title>{{ fullName }}</ion-title>
     <ion-buttons slot="end">
+      <!-- Icône de notification (visible pour patients et médecins) -->
+      <div *ngIf="isLoggedIn" class="notifications">
+        <ion-icon name="notifications-outline" (click)="toggleNotifications()"></ion-icon>
+        <span class="badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
+        <div class="notification-dropdown" *ngIf="showNotifications">
+          <ion-list>
+            <ion-item *ngFor="let notification of notifications" [ngClass]="{'unread': !notification.lue}">
+              <ion-label>
+                <p>{{ notification.message }}</p>
+                <p class="date">{{ notification.date | date:'short' }}</p>
+              </ion-label>
+              <ion-button slot="end" *ngIf="!notification.lue" (click)="markNotificationAsRead(notification.id)">
+                Marquer comme lue
+              </ion-button>
+            </ion-item>
+            <ion-item *ngIf="notifications.length === 0">
+              <ion-label>Aucune notification</ion-label>
+            </ion-item>
+          </ion-list>
+        </div>
+      </div>
+
+      <!-- Avatar et bouton de déconnexion -->
       <ion-avatar *ngIf="isLoggedIn" (click)="triggerFileInput()">
         <img *ngIf="profilePictureUrl" [src]="profilePictureUrl" alt="Photo de profil" (error)="handleImageError($event)" />
         <ion-icon *ngIf="!profilePictureUrl" name="person-circle-outline"></ion-icon>

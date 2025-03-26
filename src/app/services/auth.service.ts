@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { User } from '../interfaces/user.interface';
 
@@ -34,7 +34,7 @@ export class AuthService {
     if (isLoggedIn) {
       const email = localStorage.getItem('email');
       const role = localStorage.getItem('role');
-      if (email) {
+      if (email && role) {
         const fetchMethod = role === 'medecin' ? this.getMedecin.bind(this) : this.getUser.bind(this);
         fetchMethod(email).subscribe({
           next: (response) => {
@@ -201,13 +201,10 @@ export class AuthService {
       console.error('Aucun token trouvé pour manageRendezVous');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
-
-    // Validation des données
     if (!userEmail || !date || !heure || !action) {
       console.error('Données invalides pour manageRendezVous :', { userEmail, date, heure, action });
       return throwError(() => new Error('Données invalides : userEmail, date, heure ou action manquant'));
     }
-
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -223,19 +220,21 @@ export class AuthService {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
-        if (error.status === 500) {
-          return throwError(() => new Error('Erreur serveur interne : vérifiez les logs du serveur'));
-        }
         return throwError(() => new Error(errorMsg));
       })
     );
   }
 
-  cancelRendezVous(medecinEmail: string, userEmail: string, date: string, heure: string): Observable<any> {
+  cancelRendezVous(medecinEmail: string, date: string, heure: string): Observable<any> {
     const token = localStorage.getItem('token');
+    const userEmail = localStorage.getItem('email');
     if (!token) {
       console.error('Aucun token trouvé pour cancelRendezVous');
       return throwError(() => new Error('Utilisateur non connecté'));
+    }
+    if (!userEmail) {
+      console.error('Email utilisateur non trouvé dans localStorage');
+      return throwError(() => new Error('Email utilisateur non disponible'));
     }
     const headers = new HttpHeaders({
       'Authorization': `Bearer ${token}`,
@@ -243,11 +242,14 @@ export class AuthService {
     });
     const body = { medecinEmail, userEmail, date, heure };
     console.log('Annulation rendez-vous avec :', body);
-    return this.http.put(`${this.apiUrl}/medecin/rendezvous/cancel`, body, { headers }).pipe(
-      tap((response) => console.log('Rendez-vous annulé :', response)),
+    return this.http.put(`${this.apiUrl}/user/rendezvous/cancel`, body, { headers }).pipe(
+      tap((response) => console.log('Rendez-vous annulé par le patient :', response)),
       catchError((error) => {
         console.error('Erreur lors de l’annulation du rendez-vous :', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
         return throwError(() => new Error(error.error?.msg || 'Erreur annulation rendez-vous'));
       })
     );
@@ -540,7 +542,7 @@ export class AuthService {
     );
   }
 
-  getNotifications(email: string): Observable<User> {
+  getNotifications(email: string): Observable<any[]> {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour getNotifications');
@@ -548,12 +550,43 @@ export class AuthService {
     }
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     console.log('Récupération des notifications pour :', email);
-    return this.http.get<User>(`${this.apiUrl}/user?email=${email}`, { headers }).pipe(
-      tap((response) => console.log('Notifications récupérées :', response.notifications)),
+    const role = localStorage.getItem('role');
+    const fetchMethod = role === 'medecin' ? this.getMedecin.bind(this) : this.getUser.bind(this);
+    return fetchMethod(email).pipe(
+      tap((response) => console.log('Réponse brute pour notifications :', response)),
+      map((response) => response.notifications || []),
       catchError((error) => {
         console.error('Erreur lors de la récupération des notifications :', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération notifications'));
+      })
+    );
+  }
+
+  markNotificationAsRead(notificationId: string): Observable<any> {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Aucun token trouvé pour markNotificationAsRead');
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    });
+    const body = { notificationId };
+    console.log('Marquer la notification comme lue :', notificationId);
+    return this.http.put(`${this.apiUrl}/user/notification/mark-as-read`, body, { headers }).pipe(
+      tap((response) => console.log('Notification marquée comme lue :', response)),
+      catchError((error) => {
+        console.error('Erreur lors du marquage de la notification comme lue :', error);
+        if (error.status === 401) {
+          this.logout();
+          return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
+        }
+        return throwError(() => new Error(error.error?.msg || 'Erreur marquage notification'));
       })
     );
   }

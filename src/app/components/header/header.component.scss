@@ -48,3 +48,24 @@ ion-title {
     z-index: 25;
   }
 }
+
+ion-popover {
+  --width: 300px;
+  --max-height: 400px;
+
+  ion-item {
+    &.unread {
+      background-color: #f0f8ff;
+      font-weight: bold;
+    }
+
+    .date {
+      font-size: 12px;
+      color: #888;
+    }
+  }
+
+  ion-list {
+    padding: 10px;
+  }
+}

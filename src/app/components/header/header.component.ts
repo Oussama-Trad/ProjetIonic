@@ -1,12 +1,13 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
+import { v4 as uuidv4 } from 'uuid'; // Ajoutez uuid pour générer un ID unique
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
-  standalone: false, // Confirmez que standalone est false
+  standalone: false,
 })
 export class HeaderComponent implements OnInit {
   user: any = {};
@@ -16,6 +17,9 @@ export class HeaderComponent implements OnInit {
   photoPreview: string | null = null;
   unreadNotificationsCount: number = 0;
   role: string | null = null;
+  showNotifications: boolean = false;
+  notifications: any[] = [];
+  popoverTriggerId: string = `notification-popover-${uuidv4()}`; // ID unique pour le popover
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -70,6 +74,15 @@ export class HeaderComponent implements OnInit {
         this.fullName = 'Utilisateur';
         this.profilePictureUrl = null;
       }
+    });
+
+    // Synchronisation avec NotificationService
+    this.notificationService.showNotifications$.subscribe((show: boolean) => {
+      this.showNotifications = show;
+    });
+
+    this.notificationService.notifications$.subscribe((notifications: any[]) => {
+      this.notifications = notifications;
     });
 
     this.notificationService.unreadNotificationsCount$.subscribe((count: number) => {
@@ -152,5 +165,28 @@ export class HeaderComponent implements OnInit {
     console.error('Erreur lors du chargement de l\'image :', event);
     event.target.style.display = 'none';
     this.profilePictureUrl = null;
+  }
+
+  markNotificationAsRead(notificationId: string) {
+    this.notificationService.markNotificationAsRead(notificationId);
+    const email = localStorage.getItem('email');
+    if (email) {
+      this.authService.markNotificationAsRead(notificationId).subscribe({
+        next: () => {
+          console.log('Notification marquée comme lue avec succès via API');
+          this.authService.getNotifications(email).subscribe({
+            next: (notifications: any[]) => {
+              this.notificationService.setNotifications(notifications);
+            },
+            error: (err: any) => {
+              console.error('Erreur lors du rechargement des notifications :', err);
+            },
+          });
+        },
+        error: (err: any) => {
+          console.error('Erreur lors du marquage de la notification via API :', err);
+        },
+      });
+    }
   }
 }

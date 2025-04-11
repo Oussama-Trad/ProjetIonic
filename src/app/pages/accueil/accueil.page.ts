@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { User } from '../../interfaces/user.interface';
+import { IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-accueil',
@@ -36,7 +38,7 @@ export class AccueilPage implements OnInit {
         console.log('Utilisateur chargé :', this.user);
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des données utilisateur :', err);
+        console.error('Erreur chargement données utilisateur :', err);
         this.router.navigate(['/login']);
       },
     });
@@ -49,7 +51,7 @@ export class AccueilPage implements OnInit {
         console.log('Notifications chargées :', this.notifications);
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des notifications :', err);
+        console.error('Erreur chargement notifications :', err);
         this.notifications = [];
       },
     });
@@ -63,7 +65,7 @@ export class AccueilPage implements OnInit {
         console.log('Médecins aléatoires chargés :', this.randomMedecins);
       },
       error: (err) => {
-        console.error('Erreur lors du chargement des médecins :', err);
+        console.error('Erreur chargement médecins :', err);
         this.randomMedecins = [];
       },
     });
@@ -79,7 +81,7 @@ export class AccueilPage implements OnInit {
         }
       },
       error: (err) => {
-        console.error('Erreur lors du marquage de la notification comme lue :', err);
+        console.error('Erreur marquage notification :', err);
       },
     });
   }

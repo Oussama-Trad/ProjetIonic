@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
   selector: 'app-historique',
   templateUrl: './historique.page.html',
   styleUrls: ['./historique.page.scss'],
-  standalone: false
+  standalone: false, // Déclaré dans un module
 })
 export class HistoriquePage implements OnInit {
   historiqueRendezVous: any[] = [];
@@ -33,7 +33,7 @@ export class HistoriquePage implements OnInit {
         console.log('Historique chargé :', this.historiqueRendezVous);
       },
       error: (err) => {
-        console.error('Erreur lors du chargement de l’historique :', err);
+        console.error('Erreur chargement historique :', err);
         this.router.navigate(['/login']);
       },
     });
@@ -46,18 +46,20 @@ export class HistoriquePage implements OnInit {
           this.medecins[medecin.email] = `${medecin.prenom} ${medecin.nom}`;
         });
       },
-      error: (err) => {
-        console.error('Erreur lors du chargement des médecins :', err);
-      },
+      error: (err) => console.error('Erreur chargement médecins :', err),
     });
   }
 
   getColor(statut: string): string {
     switch (statut) {
-      case 'accepté': return 'accepted';
-      case 'refusé': return 'unavailable';
-      case 'en attente': return 'pending';
-      default: return '';
+      case 'accepté':
+        return 'accepted';
+      case 'refusé':
+        return 'unavailable';
+      case 'en attente':
+        return 'pending';
+      default:
+        return '';
     }
   }
 

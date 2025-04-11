@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-documents',
   templateUrl: './documents.page.html',
   styleUrls: ['./documents.page.scss'],
-  standalone:false
+  standalone: false, // Déclaré dans un module
 })
 export class DocumentsPage implements OnInit {
   isLoggedIn: boolean = false;
@@ -35,13 +35,13 @@ export class DocumentsPage implements OnInit {
   loadDocuments() {
     if (this.role === 'patient') {
       this.authService.getUser(this.userEmail).subscribe({
-        next: (response: any) => this.documents = response.documents || [],
-        error: (err: any) => console.error('Erreur chargement documents :', err)
+        next: (response: any) => (this.documents = response.documents || []),
+        error: (err: any) => console.error('Erreur chargement documents :', err),
       });
     } else if (this.role === 'medecin' && this.patientId) {
       this.authService.getUser(this.patientId).subscribe({
-        next: (response: any) => this.documents = response.documents || [],
-        error: (err: any) => console.error('Erreur chargement documents patient :', err)
+        next: (response: any) => (this.documents = response.documents || []),
+        error: (err: any) => console.error('Erreur chargement documents patient :', err),
       });
     }
   }
@@ -69,7 +69,7 @@ export class DocumentsPage implements OnInit {
           this.medecinEmail = '';
           this.selectedFile = null;
         },
-        error: (err: any) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+        error: (err: any) => alert('Erreur : ' + (err.error?.msg || 'Échec')),
       });
     };
     reader.readAsDataURL(this.selectedFile);
@@ -87,9 +87,9 @@ export class DocumentsPage implements OnInit {
           );
           this.authService.updateUserAccount({ ...user, documents: updatedDocs }).subscribe({
             next: () => this.loadDocuments(),
-            error: (err: any) => console.error('Erreur mise à jour annotation :', err)
+            error: (err: any) => console.error('Erreur mise à jour annotation :', err),
           });
-        }
+        },
       });
     }
   }

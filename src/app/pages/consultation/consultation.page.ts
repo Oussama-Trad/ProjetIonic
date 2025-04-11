@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-consultation',
   templateUrl: './consultation.page.html',
   styleUrls: ['./consultation.page.scss'],
-  standalone:false
+  standalone: false, // Déclaré dans un module
 })
 export class ConsultationPage implements OnInit {
   isLoggedIn: boolean = false;
@@ -43,7 +43,7 @@ export class ConsultationPage implements OnInit {
           this.diagnostics = response.diagnostics || [];
           this.prescriptions = response.prescriptions || [];
         },
-        error: (err: any) => console.error('Erreur chargement consultation :', err)
+        error: (err: any) => console.error('Erreur chargement consultation :', err),
       });
     }
   }
@@ -72,14 +72,14 @@ export class ConsultationPage implements OnInit {
       date: this.date,
       heure: this.heure,
       diagnostics: this.diagnostics,
-      prescriptions: this.prescriptions
+      prescriptions: this.prescriptions,
     };
     this.authService.saveConsultation(consultation).subscribe({
       next: () => {
         alert('Consultation enregistrée avec succès');
         this.router.navigate(['/accueil-medecin']);
       },
-      error: (err: any) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+      error: (err: any) => alert('Erreur : ' + (err.error?.msg || 'Échec')),
     });
   }
 

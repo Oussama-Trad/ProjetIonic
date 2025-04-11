@@ -12,7 +12,7 @@ import { AuthService } from '../../services/auth.service';
     </ion-list>
     <ion-label *ngIf="notifications.length === 0">Aucune notification</ion-label>
   `,
-  standalone:false
+  standalone: false, // Déclaré dans un module
 })
 export class NotificationsComponent implements OnInit {
   notifications: any[] = [];

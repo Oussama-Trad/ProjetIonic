@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
-  standalone: false
+  standalone: false, // Déclaré dans un module
 })
 export class HomePage implements OnInit {
   isLoggedIn: boolean = false;
@@ -43,9 +43,10 @@ export class HomePage implements OnInit {
     this.photoPreview = null;
   }
 
-  onFileChange(event: any) {
-    const file = event.target.files[0];
-    if (file) {
+  onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
       const reader = new FileReader();
       reader.onload = () => {
         this.photoPreview = reader.result as string;
@@ -68,29 +69,28 @@ export class HomePage implements OnInit {
       profilePicture: this.photoPreview || this.user.profilePicture || '',
     };
 
-    console.log('Données envoyées pour mise à jour :', updatedUser);
-
-    this.authService.updateUser(
-      updatedUser.email,
-      updatedUser.firstName,
-      updatedUser.lastName,
-      updatedUser.phoneNumber,
-      updatedUser.address,
-      updatedUser.birthDate,
-      updatedUser.gender,
-      updatedUser.profilePicture
-    ).subscribe({
-      next: (response) => {
-        this.user = response;
-        this.isEditing = false;
-        alert('Profil mis à jour avec succès !');
-        console.log('Réponse du serveur :', response);
-      },
-      error: (err) => {
-        console.error('Erreur mise à jour profil :', err);
-        alert('Erreur lors de la mise à jour : ' + (err.error?.msg || 'Échec'));
-      },
-    });
+    this.authService
+      .updateUser(
+        updatedUser.email,
+        updatedUser.firstName,
+        updatedUser.lastName,
+        updatedUser.phoneNumber,
+        updatedUser.address,
+        updatedUser.birthDate,
+        updatedUser.gender,
+        updatedUser.profilePicture
+      )
+      .subscribe({
+        next: (response) => {
+          this.user = response;
+          this.isEditing = false;
+          alert('Profil mis à jour avec succès !');
+        },
+        error: (err) => {
+          console.error('Erreur mise à jour profil :', err);
+          alert('Erreur : ' + (err.error?.msg || 'Échec'));
+        },
+      });
   }
 
   goToLogin() {

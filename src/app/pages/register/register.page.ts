@@ -1,14 +1,12 @@
 import { Component } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
   templateUrl: './register.page.html',
   styleUrls: ['./register.page.scss'],
-  standalone: false
+  standalone: false, // Déclaré dans un module
 })
 export class RegisterPage {
   firstName: string = '';
@@ -27,9 +25,10 @@ export class RegisterPage {
     this.router.navigate(['/home']);
   }
 
-  uploadProfilePicture(event: any) { // Ajout de la méthode
-    const file = event.target.files[0];
-    if (file) {
+  uploadProfilePicture(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
       const reader = new FileReader();
       reader.onload = () => {
         this.profilePicture = reader.result as string;
@@ -56,7 +55,7 @@ export class RegisterPage {
           alert('Inscription réussie');
           this.router.navigate(['/login']);
         },
-        error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec'))
+        error: (err) => alert('Erreur : ' + (err.error?.msg || 'Échec')),
       });
   }
 }

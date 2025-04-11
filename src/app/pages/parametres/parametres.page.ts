@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-parametres',
   templateUrl: './parametres.page.html',
   styleUrls: ['./parametres.page.scss'],
-  standalone:false
+  standalone: false, // Déclaré dans un module
 })
 export class ParametresPage implements OnInit {
   isLoggedIn: boolean = false;

@@ -8,12 +8,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-tabs',
   templateUrl: './tabs.component.html',
   styleUrls: ['./tabs.component.scss'],
-  standalone: true,
-  imports: [
-    IonicModule,
-    CommonModule,
-    RouterModule,
-  ],
+  standalone: false
 })
 export class TabsComponent {
   isLoggedIn: boolean = false;

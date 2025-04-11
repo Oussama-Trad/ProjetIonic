@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "737507320252",
+    "project_id": "cabinetmedical-75146",
+    "storage_bucket": "cabinetmedical-75146.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737507320252:android:88fe80633e7bab0a7a0bb9",
+        "android_client_info": {
+          "package_name": "com.oussamahamed.cabinetmedical"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWofHzZQjodqRzll7QN6GhXxRER1_Qib4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

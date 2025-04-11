@@ -1,39 +1,64 @@
-import { Component } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
-import { CommonModule } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AlertController } from '@ionic/angular';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.page.html',
   styleUrls: ['./login.page.scss'],
-  standalone: false,
-
+  standalone: false, // Déclaré dans un module
 })
-export class LoginPage {
+export class LoginPage implements OnInit {
   email: string = '';
   password: string = '';
   errorMessage: string = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private alertController: AlertController,
+    private route: ActivatedRoute
+  ) {}
 
-  login() {
-    this.errorMessage = ''; // Réinitialiser le message d'erreur
+  ngOnInit() {
+    this.route.queryParams.subscribe((params) => {
+      if (params['access_token']) {
+        this.authService.handleOAuthCallback(params);
+      }
+    });
+  }
+
+  async login() {
+    this.errorMessage = '';
     this.authService.login(this.email, this.password).subscribe({
-      next: (response: any) => {
-        if (response.role === 'patient') {
-          this.router.navigate(['/accueil']);
-        } else if (response.role === 'medecin') {
+      next: (response) => {
+        const role = localStorage.getItem('role');
+        if (role === 'patient') {
+          this.router.navigate(['/tabs/accueil']);
+        } else if (role === 'medecin') {
           this.router.navigate(['/accueil-medecin']);
         }
       },
-      error: (err: any) => {
-        this.errorMessage = err.message || 'Échec de la connexion. Vérifiez vos identifiants.';
-        console.error('Erreur de connexion :', err);
+      error: async (err) => {
+        console.error('Erreur connexion :', err);
+        this.errorMessage = err.message || 'Échec de la connexion';
+        const alert = await this.alertController.create({
+          header: 'Erreur',
+          message: this.errorMessage,
+          buttons: ['OK'],
+        });
+        await alert.present();
       },
     });
+  }
+
+  loginWithGoogle() {
+    this.authService.loginWithGoogle();
+  }
+
+  loginWithFacebook() {
+    this.authService.loginWithFacebook();
   }
 
   goToRegister() {

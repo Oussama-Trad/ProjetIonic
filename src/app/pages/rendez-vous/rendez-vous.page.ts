@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-rendez-vous',
   templateUrl: './rendez-vous.page.html',
   styleUrls: ['./rendez-vous.page.scss'],
-  standalone: false
+  standalone: false, // Déclaré dans un module
 })
 export class RendezVousPage implements OnInit {
   medecin: any = {};
@@ -33,7 +33,7 @@ export class RendezVousPage implements OnInit {
       this.loadMedecinData(medecinEmail);
       this.loadDisponibilites(medecinEmail);
     } else {
-      console.error('Aucun email de médecin fourni dans les paramètres');
+      console.error('Aucun email de médecin fourni');
       this.router.navigate(['/accueil']);
     }
     this.checkAuth();
@@ -42,7 +42,7 @@ export class RendezVousPage implements OnInit {
   checkAuth() {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.warn('Aucun token trouvé. Redirection vers la page de connexion.');
+      console.warn('Aucun token trouvé');
       this.router.navigate(['/login']);
     }
   }
@@ -51,7 +51,7 @@ export class RendezVousPage implements OnInit {
     this.authService.getMedecin(medecinEmail).subscribe({
       next: (response: any) => {
         this.medecin = response;
-        console.log('Données du médecin chargées :', this.medecin);
+        console.log('Données médecin chargées :', this.medecin);
         this.loadCalendar();
       },
       error: (err: any) => {
@@ -105,7 +105,7 @@ export class RendezVousPage implements OnInit {
       .concat(this.disponibilites.rendezVousDemandes || [])
       .filter((rdv: any) => rdv.date === dateStr && ['accepté', 'en attente'].includes(rdv.statut));
 
-    const availableSlots = heuresPossibles.filter(heure => 
+    const availableSlots = heuresPossibles.filter((heure) =>
       !rdvConflicts.some((rdv: any) => rdv.heure === heure)
     );
     return availableSlots.length > 0;
@@ -138,9 +138,9 @@ export class RendezVousPage implements OnInit {
   getHoursForSelectedDay(): { heure: string; disponible: boolean }[] {
     if (!this.selectedDay) return [];
     const heuresPossibles = this.generateAvailableSlots();
-    return heuresPossibles.map(heure => ({
+    return heuresPossibles.map((heure) => ({
       heure,
-      disponible: this.isSlotAvailable(this.selectedDay!, heure)
+      disponible: this.isSlotAvailable(this.selectedDay!, heure),
     }));
   }
 
@@ -158,9 +158,10 @@ export class RendezVousPage implements OnInit {
     this.selectedHeure = '';
   }
 
-  onFileChange(event: any) {
-    this.documentFile = event.target.files[0];
-    if (this.documentFile) {
+  onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.documentFile = input.files[0];
       const reader = new FileReader();
       reader.onload = () => {
         this.documentUrl = reader.result as string;
@@ -172,13 +173,11 @@ export class RendezVousPage implements OnInit {
   uploadDocument() {
     if (!this.documentFile || !this.documentName) return;
     this.authService.uploadDocument(this.documentName, this.documentUrl!, this.medecin.email).subscribe({
-      next: () => {
-        console.log('Document téléversé avec succès');
-      },
+      next: () => console.log('Document téléversé avec succès'),
       error: (err) => {
-        console.error('Erreur lors du téléversement du document :', err);
-        alert('Erreur lors de l’ajout du document');
-      }
+        console.error('Erreur téléversement document :', err);
+        alert('Erreur ajout document');
+      },
     });
   }
 
@@ -200,18 +199,15 @@ export class RendezVousPage implements OnInit {
       userEmail: userEmail,
       date: this.selectedDay,
       heure: this.selectedHeure,
-      motif: 'Consultation générale'
+      motif: 'Consultation générale',
     };
 
     if (this.documentUrl && this.documentName) {
       rdvData.document = { nom: this.documentName, url: this.documentUrl };
     }
 
-    console.log('Données envoyées à createRendezVous :', rdvData);
-
     this.authService.createRendezVous(rdvData).subscribe({
       next: (response) => {
-        console.log('Réponse du serveur :', response);
         alert('Rendez-vous demandé avec succès !');
         this.selectedDay = null;
         this.selectedHeure = '';
@@ -222,12 +218,9 @@ export class RendezVousPage implements OnInit {
         this.loadDisponibilites(this.medecin.email);
       },
       error: (err) => {
-        console.error('Erreur lors de la création du rendez-vous :', err);
-        const errorMsg = err.error?.msg || 'Échec de la réservation';
-        alert(`Erreur : ${errorMsg}`);
-        if (err.status === 401) {
-          this.router.navigate(['/login']);
-        }
+        console.error('Erreur création rendez-vous :', err);
+        alert(`Erreur : ${err.error?.msg || 'Échec'}`);
+        if (err.status === 401) this.router.navigate(['/login']);
       },
     });
   }

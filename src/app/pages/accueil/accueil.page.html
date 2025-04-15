@@ -1,23 +1,23 @@
 <app-header></app-header>
 
 <ion-content>
-  <ion-card>
+  <ion-card class="welcome-card">
     <ion-card-header>
       <ion-card-title>Bienvenue, {{ user.firstName }} {{ user.lastName }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-button expand="block" (click)="goToRendezVous()">Prendre un rendez-vous</ion-button>
+      <ion-button expand="block" color="primary" (click)="goToRendezVous()">Prendre un rendez-vous</ion-button>
     </ion-card-content>
   </ion-card>
 
-  <!-- Section pour afficher 3 médecins aléatoires -->
+  <!-- Médecins suggérés -->
   <ion-card>
     <ion-card-header>
       <ion-card-title>Médecins suggérés</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-list>
-        <ion-item *ngFor="let medecin of randomMedecins" (click)="goToMedecinCalendar(medecin.email)">
+        <ion-item *ngFor="let medecin of randomMedecins" (click)="goToMedecinCalendar(medecin.email)" class="medecin-item">
           <ion-avatar slot="start">
             <img [src]="medecin.photoProfil || 'assets/default-avatar.png'" alt="Photo du médecin">
           </ion-avatar>
@@ -25,7 +25,7 @@
             <h3>{{ medecin.prenom }} {{ medecin.nom }}</h3>
             <p>{{ medecin.specialite }}</p>
           </ion-label>
-          <ion-button slot="end">Réserver</ion-button>
+          <ion-button slot="end" color="primary">Réserver</ion-button>
         </ion-item>
         <ion-item *ngIf="randomMedecins.length === 0">
           <ion-label>Aucun médecin disponible</ion-label>
@@ -34,14 +34,14 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Section pour afficher les notifications -->
+  <!-- Notifications -->
   <ion-card>
     <ion-card-header>
       <ion-card-title>Notifications</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-list>
-        <ion-item *ngFor="let notification of notifications" (click)="markNotificationAsRead(notification.id)" [ngClass]="{'unread': !notification.lue}">
+        <ion-item *ngFor="let notification of notifications" (click)="handleNotificationClick(notification)" [ngClass]="{'unread': !notification.lue}">
           <ion-label>
             <p>{{ notification.message }}</p>
             <p class="date">{{ notification.date | date:'short' }}</p>

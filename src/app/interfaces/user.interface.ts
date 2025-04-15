@@ -12,7 +12,7 @@ export interface User {
   rendezVousFuturs: any[];
   historiqueRendezVous: any[];
   documents: any[];
-  notifications: { id: string; message: string; date: string; lue: boolean; type: string }[];
+  notifications: { id: string; message: string; date: string; lue: boolean; type: string; data?: any }[];
   createdAt?: string;
-  settings: { darkMode: boolean; language: string };
+  settings: { darkMode: boolean; language: string; theme: string };
 }

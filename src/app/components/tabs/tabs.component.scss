@@ -1,8 +1,26 @@
 ion-tab-bar {
-    --background: #f8f8f8;
-    --border: 0;
+  --background: #ffffff;
+  --border: 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+ion-tab-button {
+  --color: #666;
+  --color-selected: #3880ff;
+  transition: transform 0.3s ease;
+
+  &.tab-button {
+    &:hover {
+      transform: scale(1.1);
+    }
   }
-  
-  ion-tab-button {
-    --color-selected: #3880ff;
+
+  ion-icon {
+    font-size: 24px;
   }
+
+  ion-label {
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+  }
+}

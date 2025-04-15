@@ -8,6 +8,8 @@ ion-toolbar {
   overflow: visible !important;
   position: relative;
   z-index: 5;
+  --background: linear-gradient(135deg, #3880ff, #5b9bff);
+  --color: white;
 }
 
 ion-buttons {
@@ -16,14 +18,20 @@ ion-buttons {
 }
 
 ion-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   margin-right: 10px;
   cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 
 ion-title {
   font-size: 1.2em;
+  font-family: 'Roboto', sans-serif;
 }
 
 .notifications {
@@ -34,38 +42,72 @@ ion-title {
   ion-icon {
     font-size: 24px;
     cursor: pointer;
+    transition: color 0.3s ease;
   }
 
   .badge {
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: red;
+    background-color: #ff4d4f;
     color: white;
     border-radius: 50%;
-    padding: 2px 6px;
+    padding: 3px 7px;
     font-size: 12px;
     z-index: 25;
+    animation: pulse 1.5s infinite;
   }
 }
 
 ion-popover {
-  --width: 300px;
+  --width: 320px;
   --max-height: 400px;
+  --background: var(--ion-background-color, #fff);
+  --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 
   ion-item {
+    --padding-start: 10px;
+    --padding-end: 10px;
+    transition: background-color 0.3s ease;
+
     &.unread {
-      background-color: #f0f8ff;
-      font-weight: bold;
+      background-color: #e6f0ff;
+      font-weight: 500;
+    }
+
+    &:hover {
+      --background: #f5f5f5;
     }
 
     .date {
       font-size: 12px;
-      color: #888;
+      color: #666;
+    }
+
+    ion-button {
+      --padding-start: 5px;
+      --padding-end: 5px;
+      font-size: 12px;
+      --color: #3880ff;
     }
   }
 
   ion-list {
-    padding: 10px;
+    padding: 8px;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
   }
 }

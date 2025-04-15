@@ -1,23 +1,22 @@
 <ion-tabs>
-  <!-- Contenu des pages (les routes sont gérées par le router) -->
-  <ion-tab-bar slot="bottom">
-    <ion-tab-button (click)="goToAccueil()">
-      <ion-icon name="home-outline"></ion-icon>
+  <ion-tab-bar slot="bottom" color="primary">
+    <ion-tab-button (click)="goToAccueil()" class="tab-button">
+      <ion-icon name="home"></ion-icon>
       <ion-label>Accueil</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button (click)="goToMedecins()">
-      <ion-icon name="people-outline"></ion-icon>
+    <ion-tab-button (click)="goToMedecins()" class="tab-button">
+      <ion-icon name="medical"></ion-icon>
       <ion-label>Médecins</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button (click)="goToProfile()">
-      <ion-icon name="person-outline"></ion-icon>
+    <ion-tab-button (click)="goToProfile()" class="tab-button">
+      <ion-icon name="person"></ion-icon>
       <ion-label>Profil</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button (click)="goToParametres()">
-      <ion-icon name="settings-outline"></ion-icon>
+    <ion-tab-button (click)="goToParametres()" class="tab-button">
+      <ion-icon name="settings"></ion-icon>
       <ion-label>Paramètres</ion-label>
     </ion-tab-button>
   </ion-tab-bar>

@@ -11,11 +11,12 @@ import { ToastController } from '@ionic/angular';
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000/api';  // URL du backend Flask
+  private apiUrl = 'http://localhost:5000/api'; // URL du backend Flask
   private isLoggedInSubject = new BehaviorSubject<boolean>(false);
-  private settingsSubject = new BehaviorSubject<{ darkMode: boolean; language: string }>({
+  private settingsSubject = new BehaviorSubject<{ darkMode: boolean; language: string; theme: string }>({
     darkMode: false,
     language: 'fr',
+    theme: 'light',
   });
   isLoggedIn$ = this.isLoggedInSubject.asObservable();
   settings$ = this.settingsSubject.asObservable();
@@ -34,7 +35,7 @@ export class AuthService {
     this.initializeFCM();
   }
 
-  // Gestion améliorée de FCM
+  // Gestion améliorée de FCM pour les notifications push
   private initializeFCM(): void {
     this.requestPermission();
     this.listenToMessages();
@@ -73,16 +74,7 @@ export class AuthService {
     });
   }
 
-  async showNotificationToast(title: string | undefined, body: string | undefined): Promise<void> {
-    const toast = await this.toastController.create({
-      header: title || 'Notification',
-      message: body || 'Nouveau message reçu',
-      duration: 3000,
-      position: 'top',
-      color: 'primary',
-    });
-    await toast.present();
-  }
+
 
   updateFcmToken(email: string, fcmToken: string): Observable<any> {
     const token = localStorage.getItem('token');
@@ -96,6 +88,7 @@ export class AuthService {
       tap(() => console.log('Token FCM mis à jour pour', email)),
       catchError((err) => {
         console.error('Erreur lors de la mise à jour du token FCM:', err);
+        this.showNotificationToast('Erreur', 'Échec de la mise à jour des notifications');
         return throwError(() => new Error('Échec de la mise à jour du token FCM'));
       })
     );
@@ -113,7 +106,7 @@ export class AuthService {
         const fetchMethod = role === 'medecin' ? this.getMedecin.bind(this) : this.getUser.bind(this);
         fetchMethod(email).subscribe({
           next: (response) => {
-            const settings = response.settings || { darkMode: false, language: 'fr' };
+            const settings = response.settings || { darkMode: false, language: 'fr', theme: 'light' };
             this.settingsSubject.next(settings);
             this.applySettings(settings);
             const fcmToken = localStorage.getItem('fcmToken');
@@ -128,11 +121,11 @@ export class AuthService {
   }
 
   login(email: string, password: string): Observable<any> {
-    // Nettoyer les entrées avant l'envoi
     const cleanedEmail = email.trim();
     const cleanedPassword = password.trim();
     if (!cleanedEmail || !cleanedPassword) {
       console.error('Email ou mot de passe vide après nettoyage:', { email: cleanedEmail, password: cleanedPassword });
+      this.showNotificationToast('Erreur', 'Email ou mot de passe ne peut pas être vide');
       return throwError(() => new Error('Email ou mot de passe ne peut pas être vide'));
     }
 
@@ -148,16 +141,17 @@ export class AuthService {
             localStorage.setItem('email', response.email);
             localStorage.setItem('role', response.role);
             this.isLoggedInSubject.next(true);
-            console.log('Connexion réussie, token stocké:', response.access_token);
+            this.showNotificationToast('Succès', 'Connexion réussie', 'success');
             const fetchMethod = response.role === 'medecin' ? this.getMedecin.bind(this) : this.getUser.bind(this);
             fetchMethod(response.email).subscribe({
               next: (user) => {
-                const settings = user.settings || { darkMode: false, language: 'fr' };
+                const settings = user.settings || { darkMode: false, language: 'fr', theme: 'light' };
                 this.settingsSubject.next(settings);
                 this.applySettings(settings);
                 if (fcmToken) {
                   this.updateFcmToken(response.email, fcmToken).subscribe();
                 }
+                this.router.navigate([response.role === 'medecin' ? '/medecin' : '/tabs/accueil']);
               },
               error: (err) => console.error('Erreur lors du chargement de l’utilisateur après connexion:', err),
             });
@@ -169,6 +163,7 @@ export class AuthService {
         catchError((error) => {
           console.error('Erreur lors de la connexion:', error);
           const errorMsg = error.error?.msg || 'Échec de la connexion. Vérifiez vos identifiants.';
+          this.showNotificationToast('Erreur', errorMsg);
           return throwError(() => new Error(errorMsg));
         })
       );
@@ -195,26 +190,29 @@ export class AuthService {
       localStorage.setItem('role', role);
       this.isLoggedInSubject.next(true);
       console.log('Connexion OAuth réussie, token stocké:', token);
+      this.showNotificationToast('Succès', 'Connexion via OAuth réussie', 'success');
 
       const fetchMethod = role === 'medecin' ? this.getMedecin.bind(this) : this.getUser.bind(this);
       fetchMethod(email).subscribe({
         next: (user) => {
-          const settings = user.settings || { darkMode: false, language: 'fr' };
+          const settings = user.settings || { darkMode: false, language: 'fr', theme: 'light' };
           this.settingsSubject.next(settings);
           this.applySettings(settings);
           const fcmToken = localStorage.getItem('fcmToken');
           if (fcmToken) {
             this.updateFcmToken(email, fcmToken).subscribe();
           }
-          this.router.navigate(['/tabs/accueil']);
+          this.router.navigate([role === 'medecin' ? '/medecin' : '/tabs/accueil']);
         },
         error: (err) => {
           console.error('Erreur lors du chargement de l’utilisateur après OAuth:', err);
+          this.showNotificationToast('Erreur', 'Échec du chargement des données utilisateur');
           this.router.navigate(['/login']);
         },
       });
     } else {
       console.error('Paramètres manquants dans le callback OAuth:', params);
+      this.showNotificationToast('Erreur', 'Échec de l’authentification OAuth');
       this.router.navigate(['/login']);
     }
   }
@@ -238,6 +236,7 @@ export class AuthService {
       .pipe(
         tap((response) => {
           console.log('Inscription réussie:', response);
+          this.showNotificationToast('Succès', 'Inscription réussie', 'success');
           if (response && response.email) {
             localStorage.setItem('email', email);
             localStorage.setItem('role', 'patient');
@@ -245,11 +244,13 @@ export class AuthService {
             if (fcmToken) {
               this.updateFcmToken(email, fcmToken).subscribe();
             }
+            this.router.navigate(['/tabs/accueil']);
           }
         }),
         catchError((error) => {
           console.error('Erreur lors de l’inscription:', error);
           const errorMsg = error.error?.msg || 'Échec de l’inscription';
+          this.showNotificationToast('Erreur', errorMsg);
           return throwError(() => new Error(errorMsg));
         })
       );
@@ -259,6 +260,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('Aucun token trouvé pour getUser');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -269,11 +271,14 @@ export class AuthService {
         console.error('Erreur lors de la récupération de l’utilisateur:', error);
         if (error.status === 401) {
           this.logout();
+          this.showNotificationToast('Erreur', 'Session expirée, veuillez vous reconnecter');
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
         if (error.status === 404) {
+          this.showNotificationToast('Erreur', 'Utilisateur non trouvé');
           return throwError(() => new Error('Utilisateur non trouvé dans la base de données'));
         }
+        this.showNotificationToast('Erreur', 'Erreur lors du chargement des données utilisateur');
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération utilisateur'));
       })
     );
@@ -283,6 +288,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('Aucun token trouvé pour getMedecin');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -293,11 +299,14 @@ export class AuthService {
         console.error('Erreur lors de la récupération du médecin:', error);
         if (error.status === 401) {
           this.logout();
+          this.showNotificationToast('Erreur', 'Session expirée, veuillez vous reconnecter');
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
         if (error.status === 404) {
+          this.showNotificationToast('Erreur', 'Médecin non trouvé');
           return throwError(() => new Error('Médecin non trouvé dans la base de données'));
         }
+        this.showNotificationToast('Erreur', 'Erreur lors du chargement des données médecin');
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération médecin'));
       })
     );
@@ -311,7 +320,11 @@ export class AuthService {
       tap((response) => console.log('Liste des médecins récupérée:', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des médecins:', error);
-        if (error.status === 401) this.logout();
+        if (error.status === 401) {
+          this.logout();
+          this.showNotificationToast('Erreur', 'Session expirée, veuillez vous reconnecter');
+        }
+        this.showNotificationToast('Erreur', 'Erreur lors du chargement des médecins');
         return throwError(() => new Error(error.error?.msg || 'Erreur récupération liste médecins'));
       })
     );
@@ -321,6 +334,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour createRendezVous');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -329,11 +343,17 @@ export class AuthService {
     });
     console.log('Création rendez-vous avec données:', data);
     return this.http.post(`${this.apiUrl}/rendezvous`, data, { headers }).pipe(
-      tap((response) => console.log('Rendez-vous créé:', response)),
+      tap((response) => {
+        console.log('Rendez-vous créé:', response);
+        this.showNotificationToast('Succès', 'Rendez-vous demandé avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la création du rendez-vous:', error);
         const errorMsg = error.error?.msg || 'Échec de la création du rendez-vous';
-        if (error.status === 401) this.logout();
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
         return throwError(() => new Error(errorMsg));
       })
     );
@@ -343,10 +363,12 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour manageRendezVous');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     if (!userEmail || !date || !heure || !action) {
       console.error('Données invalides pour manageRendezVous:', { userEmail, date, heure, action });
+      this.showNotificationToast('Erreur', 'Données invalides pour le rendez-vous');
       return throwError(() => new Error('Données invalides: userEmail, date, heure ou action manquant'));
     }
     const headers = new HttpHeaders({
@@ -356,10 +378,14 @@ export class AuthService {
     const body = { userEmail, date, heure };
     console.log(`Gestion rendez-vous (${action}) avec:`, body);
     return this.http.put(`${this.apiUrl}/medecin/rendezvous/${action}`, body, { headers }).pipe(
-      tap((response) => console.log(`Rendez-vous ${action}:`, response)),
+      tap((response) => {
+        console.log(`Rendez-vous ${action}:`, response);
+        this.showNotificationToast('Succès', `Rendez-vous ${action} avec succès`, 'success');
+      }),
       catchError((error) => {
         console.error(`Erreur lors de la gestion du rendez-vous (${action}):`, error);
         const errorMsg = error.error?.msg || `Échec de l'action ${action} sur le rendez-vous`;
+        this.showNotificationToast('Erreur', errorMsg);
         if (error.status === 401) {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
@@ -374,10 +400,12 @@ export class AuthService {
     const userEmail = localStorage.getItem('email');
     if (!token) {
       console.error('Aucun token trouvé pour cancelRendezVous');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     if (!userEmail) {
       console.error('Email utilisateur non trouvé dans localStorage');
+      this.showNotificationToast('Erreur', 'Email utilisateur non disponible');
       return throwError(() => new Error('Email utilisateur non disponible'));
     }
     const headers = new HttpHeaders({
@@ -387,14 +415,19 @@ export class AuthService {
     const body = { medecinEmail, userEmail, date, heure };
     console.log('Annulation rendez-vous avec:', body);
     return this.http.put(`${this.apiUrl}/user/rendezvous/cancel`, body, { headers }).pipe(
-      tap((response) => console.log('Rendez-vous annulé par le patient:', response)),
+      tap((response) => {
+        console.log('Rendez-vous annulé par le patient:', response);
+        this.showNotificationToast('Succès', 'Rendez-vous annulé avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de l’annulation du rendez-vous:', error);
+        const errorMsg = error.error?.msg || 'Erreur lors de l’annulation du rendez-vous';
+        this.showNotificationToast('Erreur', errorMsg);
         if (error.status === 401) {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
-        return throwError(() => new Error(error.error?.msg || 'Erreur annulation rendez-vous'));
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -409,6 +442,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour saveConsultation');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -418,11 +452,18 @@ export class AuthService {
     const body = { ...consultation, fcmToken: localStorage.getItem('fcmToken') || '' };
     console.log('Enregistrement consultation avec:', body);
     return this.http.post(`${this.apiUrl}/medecin/consultation`, body, { headers }).pipe(
-      tap((response) => console.log('Consultation enregistrée:', response)),
+      tap((response) => {
+        console.log('Consultation enregistrée:', response);
+        this.showNotificationToast('Succès', 'Consultation enregistrée avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de l’enregistrement de la consultation:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur enregistrement consultation'));
+        const errorMsg = error.error?.msg || 'Erreur lors de l’enregistrement de la consultation';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -437,6 +478,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateConsultation');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -446,11 +488,18 @@ export class AuthService {
     const body = { userEmail, date, heure, diagnostics, prescriptions };
     console.log('Mise à jour consultation avec:', body);
     return this.http.put(`${this.apiUrl}/medecin/consultation`, body, { headers }).pipe(
-      tap((response) => console.log('Consultation mise à jour:', response)),
+      tap((response) => {
+        console.log('Consultation mise à jour:', response);
+        this.showNotificationToast('Succès', 'Consultation mise à jour avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de la consultation:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour consultation'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour de la consultation';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -459,6 +508,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour getConsultation');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -467,8 +517,12 @@ export class AuthService {
       tap((response) => console.log('Consultation récupérée:', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération de la consultation:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur récupération consultation'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la récupération de la consultation';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -477,6 +531,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour uploadDocument');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -486,11 +541,18 @@ export class AuthService {
     const body = { nom, url, medecinEmail, fcmToken: localStorage.getItem('fcmToken') || '' };
     console.log('Téléversement document avec:', body);
     return this.http.post(`${this.apiUrl}/user/document`, body, { headers }).pipe(
-      tap((response) => console.log('Document téléversé:', response)),
+      tap((response) => {
+        console.log('Document téléversé:', response);
+        this.showNotificationToast('Succès', 'Document envoyé avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors du téléversement du document:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur téléversement document'));
+        const errorMsg = error.error?.msg || 'Erreur lors de l’envoi du document';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -508,6 +570,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateUser');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -517,11 +580,18 @@ export class AuthService {
     const body = { email, firstName, lastName, phoneNumber, address, birthDate, gender, profilePicture };
     console.log('Mise à jour utilisateur avec:', body);
     return this.http.put(`${this.apiUrl}/user`, body, { headers }).pipe(
-      tap((response) => console.log('Utilisateur mis à jour:', response)),
+      tap((response) => {
+        console.log('Utilisateur mis à jour:', response);
+        this.showNotificationToast('Succès', 'Profil mis à jour avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de l’utilisateur:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour utilisateur'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour du profil';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -530,6 +600,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateUserProfilePicture');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -538,11 +609,18 @@ export class AuthService {
     });
     console.log('Mise à jour de la photo de profil pour:', email, updatedData);
     return this.http.put(`${this.apiUrl}/user`, updatedData, { headers }).pipe(
-      tap((response) => console.log('Photo de profil mise à jour:', response)),
+      tap((response) => {
+        console.log('Photo de profil mise à jour:', response);
+        this.showNotificationToast('Succès', 'Photo de profil mise à jour', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour de la photo de profil:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour photo de profil'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour de la photo';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -551,6 +629,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateUserAccount');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -559,11 +638,18 @@ export class AuthService {
     });
     console.log('Mise à jour compte utilisateur avec:', user);
     return this.http.put(`${this.apiUrl}/user/account`, user, { headers }).pipe(
-      tap((response) => console.log('Compte utilisateur mis à jour:', response)),
+      tap((response) => {
+        console.log('Compte utilisateur mis à jour:', response);
+        this.showNotificationToast('Succès', 'Compte mis à jour avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du compte utilisateur:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour compte utilisateur'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour du compte';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -572,16 +658,25 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour deleteUser');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     console.log('Suppression utilisateur pour email:', email);
     return this.http.delete(`${this.apiUrl}/user`, { headers, params: { email } }).pipe(
-      tap((response) => console.log('Utilisateur supprimé:', response)),
+      tap((response) => {
+        console.log('Utilisateur supprimé:', response);
+        this.showNotificationToast('Succès', 'Compte supprimé avec succès', 'success');
+        this.logout();
+      }),
       catchError((error) => {
         console.error('Erreur lors de la suppression de l’utilisateur:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur suppression utilisateur'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la suppression du compte';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -590,6 +685,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateMedecin');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -598,11 +694,18 @@ export class AuthService {
     });
     console.log('Mise à jour médecin avec:', medecin);
     return this.http.put(`${this.apiUrl}/medecin/update`, medecin, { headers }).pipe(
-      tap((response) => console.log('Médecin mis à jour:', response)),
+      tap((response) => {
+        console.log('Médecin mis à jour:', response);
+        this.showNotificationToast('Succès', 'Profil médecin mis à jour avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du médecin:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour médecin'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour du profil médecin';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -611,6 +714,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateMedecinAccount');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -619,11 +723,18 @@ export class AuthService {
     });
     console.log('Mise à jour compte médecin avec:', medecin);
     return this.http.put(`${this.apiUrl}/medecin/account`, medecin, { headers }).pipe(
-      tap((response) => console.log('Compte médecin mis à jour:', response)),
+      tap((response) => {
+        console.log('Compte médecin mis à jour:', response);
+        this.showNotificationToast('Succès', 'Compte médecin mis à jour avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour du compte médecin:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour compte médecin'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour du compte médecin';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -632,6 +743,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour changePassword');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -641,39 +753,51 @@ export class AuthService {
     const body = { email, oldPassword, newPassword };
     console.log('Changement de mot de passe avec:', { email });
     return this.http.put(`${this.apiUrl}/change-password`, body, { headers }).pipe(
-      tap((response) => console.log('Mot de passe changé:', response)),
+      tap((response) => {
+        console.log('Mot de passe changé:', response);
+        this.showNotificationToast('Succès', 'Mot de passe changé avec succès', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors du changement de mot de passe:', error);
         const errorMsg = error.error?.msg || 'Échec du changement de mot de passe';
-        if (error.status === 401) this.logout();
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
         return throwError(() => new Error(errorMsg));
       })
     );
   }
 
-  updateSettings(darkMode: boolean, language: string): Observable<any> {
+  updateSettings(darkMode: boolean, language: string, theme: string): Observable<any> {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour updateSettings');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     });
-    const body = { darkMode, language };
+    const body = { darkMode, language, theme };
     console.log('Mise à jour des paramètres avec:', body);
     return this.http.put(`${this.apiUrl}/user/settings`, body, { headers }).pipe(
       tap((response) => {
         console.log('Paramètres mis à jour:', response);
-        const newSettings = { darkMode, language };
+        const newSettings = { darkMode, language, theme };
         this.settingsSubject.next(newSettings);
         this.applySettings(newSettings);
+        this.showNotificationToast('Succès', 'Paramètres mis à jour avec succès', 'success');
       }),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour des paramètres:', error);
-        if (error.status === 401) this.logout();
-        return throwError(() => new Error(error.error?.msg || 'Erreur mise à jour paramètres'));
+        const errorMsg = error.error?.msg || 'Erreur lors de la mise à jour des paramètres';
+        this.showNotificationToast('Erreur', errorMsg);
+        if (error.status === 401) {
+          this.logout();
+        }
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -682,6 +806,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('Aucun token trouvé pour getMedecinDisponibilites');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -690,11 +815,13 @@ export class AuthService {
       tap((response) => console.log('Disponibilités récupérées:', response)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des disponibilités:', error);
+        const errorMsg = error.error?.msg || 'Erreur lors de la récupération des disponibilités';
+        this.showNotificationToast('Erreur', errorMsg);
         if (error.status === 401) {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
-        return throwError(() => new Error(error.error?.msg || 'Erreur récupération disponibilités'));
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -703,6 +830,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour getNotifications');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
@@ -714,11 +842,13 @@ export class AuthService {
       map((response) => response.notifications || []),
       catchError((error) => {
         console.error('Erreur lors de la récupération des notifications:', error);
+        const errorMsg = error.error?.msg || 'Erreur lors du chargement des notifications';
+        this.showNotificationToast('Erreur', errorMsg);
         if (error.status === 401) {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
-        return throwError(() => new Error(error.error?.msg || 'Erreur récupération notifications'));
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -727,6 +857,7 @@ export class AuthService {
     const token = localStorage.getItem('token');
     if (!token) {
       console.error('Aucun token trouvé pour markNotificationAsRead');
+      this.showNotificationToast('Erreur', 'Utilisateur non connecté');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({
@@ -736,14 +867,19 @@ export class AuthService {
     const body = { notificationId };
     console.log('Marquer la notification comme lue:', notificationId);
     return this.http.put(`${this.apiUrl}/user/notification/mark-as-read`, body, { headers }).pipe(
-      tap((response) => console.log('Notification marquée comme lue:', response)),
+      tap((response) => {
+        console.log('Notification marquée comme lue:', response);
+        this.showNotificationToast('Succès', 'Notification marquée comme lue', 'success');
+      }),
       catchError((error) => {
         console.error('Erreur lors du marquage de la notification comme lue:', error);
+        const errorMsg = error.error?.msg || 'Erreur lors du marquage de la notification';
+        this.showNotificationToast('Erreur', errorMsg);
         if (error.status === 401) {
           this.logout();
           return throwError(() => new Error('Session expirée, veuillez vous reconnecter'));
         }
-        return throwError(() => new Error(error.error?.msg || 'Erreur marquage notification'));
+        return throwError(() => new Error(errorMsg));
       })
     );
   }
@@ -755,9 +891,10 @@ export class AuthService {
     localStorage.removeItem('role');
     localStorage.removeItem('fcmToken');
     this.isLoggedInSubject.next(false);
-    this.settingsSubject.next({ darkMode: false, language: 'fr' });
-    this.applySettings({ darkMode: false, language: 'fr' });
+    this.settingsSubject.next({ darkMode: false, language: 'fr', theme: 'light' });
+    this.applySettings({ darkMode: false, language: 'fr', theme: 'light' });
     this.router.navigate(['/login'], { replaceUrl: true });
+    this.showNotificationToast('Succès', 'Déconnexion réussie', 'success');
     console.log('Utilisateur déconnecté, redirection vers /login');
   }
 
@@ -768,12 +905,26 @@ export class AuthService {
     return isAuthenticated;
   }
 
-  private applySettings(settings: { darkMode: boolean; language: string }): void {
-    if (settings.darkMode) {
+  private applySettings(settings: { darkMode: boolean; language: string; theme: string }): void {
+    if (settings.darkMode || settings.theme === 'dark') {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');
     }
+    // Appliquer la langue si nécessaire (ex. pour i18n)
     console.log('Settings appliqués:', settings);
+  }
+
+  private showNotificationToast(header: string, message: string, color: string = 'danger'): Promise<void> {
+    return this.toastController
+      .create({
+        header,
+        message,
+        duration: 3000,
+        position: 'top',
+        color: color === 'success' ? 'success' : 'danger',
+        buttons: [{ text: 'OK', role: 'cancel' }],
+      })
+      .then((toast) => toast.present());
   }
 }

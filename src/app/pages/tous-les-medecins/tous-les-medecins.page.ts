@@ -1,22 +1,37 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { IonicModule } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { LoadingController } from '@ionic/angular';
 
 @Component({
   selector: 'app-tous-les-medecins',
   templateUrl: './tous-les-medecins.page.html',
   styleUrls: ['./tous-les-medecins.page.scss'],
-  standalone: false, // Déclaré dans un module
+  standalone: false,
+
 })
 export class TousLesMedecinsPage implements OnInit {
   medecins: any[] = [];
   filteredMedecins: any[] = [];
   searchQuery: string = '';
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private loadingController: LoadingController
+  ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
+    const loading = await this.loadingController.create({
+      message: 'Chargement des médecins...',
+      spinner: 'crescent'
+    });
+    await loading.present();
     this.loadMedecins();
+    loading.dismiss();
   }
 
   loadMedecins() {

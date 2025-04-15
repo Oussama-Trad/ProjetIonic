@@ -23,7 +23,7 @@ firebase_admin.initialize_app(cred)
 
 app = Flask(__name__)
 
-# Configuration CORS pour inclure localhost:8102 (Ionic)
+# Configuration CORS
 CORS(app, resources={
     r"/api/*": {
         "origins": ["http://localhost:8100", "http://localhost:8101", "http://localhost:8102", "http://localhost:8104"],
@@ -84,12 +84,12 @@ facebook = oauth.register(
 @jwt_manager.invalid_token_loader
 def invalid_token_callback(error):
     print(f"Token invalide détecté: {error}")
-    return jsonify({'msg': 'Token invalide ou mal formé'}), 401
+    return jsonify({'msg': 'Token invalide ou mal formé', 'error': str(error)}), 401
 
 @jwt_manager.unauthorized_loader
 def unauthorized_callback(error):
     print(f"Accès non autorisé: {error}")
-    return jsonify({'msg': 'Token manquant ou non autorisé'}), 401
+    return jsonify({'msg': 'Token manquant ou non autorisé', 'error': str(error)}), 401
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -110,7 +110,6 @@ def verify_password(password, hashed):
         if not hashed:
             print("Mot de passe haché vide")
             return False
-        # Nettoyer le mot de passe reçu pour éviter espaces ou caractères indésirables
         password_cleaned = password.strip() if password else ""
         hashed_cleaned = hashed.strip() if hashed else ""
         result = bcrypt.checkpw(password_cleaned.encode('utf-8'), hashed_cleaned.encode('utf-8'))
@@ -120,13 +119,14 @@ def verify_password(password, hashed):
         print(f"Erreur vérification mot de passe: {str(e)}")
         return False
 
-def send_fcm_notification(fcm_token, title, body):
+def send_fcm_notification(fcm_token, title, body, data=None):
     if not fcm_token:
         print("Aucun token FCM fourni")
         return
     message = messaging.Message(
         notification=messaging.Notification(title=title, body=body),
-        token=fcm_token
+        token=fcm_token,
+        data=data or {}
     )
     try:
         response = messaging.send(message)
@@ -186,7 +186,7 @@ def google_callback():
                 'documents': [],
                 'notifications': [],
                 'createdAt': datetime.utcnow(),
-                'settings': {'darkMode': False, 'language': 'fr'},
+                'settings': {'darkMode': False, 'language': 'fr', 'theme': 'light'},
                 'authProvider': 'google',
                 'fcmToken': request.args.get('fcmToken', '')
             }
@@ -205,7 +205,7 @@ def google_callback():
         return redirect(frontend_url)
     except Exception as e:
         print(f"Error in Google OAuth callback: {str(e)}")
-        return jsonify({'error': 'Google OAuth failed', 'details': str(e)}), 500
+        return jsonify({'error': 'Échec de l’authentification Google', 'details': str(e)}), 500
 
 @app.route('/api/auth/facebook')
 def facebook_login():
@@ -242,7 +242,7 @@ def facebook_callback():
                 'documents': [],
                 'notifications': [],
                 'createdAt': datetime.utcnow(),
-                'settings': {'darkMode': False, 'language': 'fr'},
+                'settings': {'darkMode': False, 'language': 'fr', 'theme': 'light'},
                 'authProvider': 'facebook',
                 'fcmToken': request.args.get('fcmToken', '')
             }
@@ -261,7 +261,7 @@ def facebook_callback():
         return redirect(frontend_url)
     except Exception as e:
         print(f"Error in Facebook OAuth callback: {str(e)}")
-        return jsonify({'error': 'Facebook OAuth failed', 'details': str(e)}), 500
+        return jsonify({'error': 'Échec de l’authentification Facebook', 'details': str(e)}), 500
 
 # Inscription
 @app.route('/api/register', methods=['POST'])
@@ -272,22 +272,22 @@ def register():
     for field in required_fields:
         if not data.get(field):
             print(f"Champ manquant: {field}")
-            return jsonify({'msg': f'Champ {field} manquant'}), 400
+            return jsonify({'msg': f'Le champ {field} est requis'}), 400
 
-    email = data.get('email')
+    email = data.get('email').strip()
     if users_collection.find_one({'email': email}) or medecins_collection.find_one({'email': email}):
         print(f"Email déjà utilisé: {email}")
-        return jsonify({'msg': 'Email déjà utilisé'}), 400
+        return jsonify({'msg': 'Cet email est déjà associé à un compte'}), 400
     
     hashed_password = hash_password(data['password'])
     user_data = {
-        'firstName': data['firstName'],
-        'lastName': data['lastName'],
-        'phoneNumber': data['phoneNumber'],
+        'firstName': data['firstName'].strip(),
+        'lastName': data['lastName'].strip(),
+        'phoneNumber': data['phoneNumber'].strip(),
         'email': email,
         'password': hashed_password,
         'birthDate': data['birthDate'],
-        'address': data['address'],
+        'address': data['address'].strip(),
         'gender': data['gender'],
         'profilePicture': data.get('profilePicture', ''),
         'rendezVousFuturs': [],
@@ -296,67 +296,61 @@ def register():
         'documents': [],
         'notifications': [],
         'createdAt': datetime.utcnow(),
-        'settings': {'darkMode': False, 'language': 'fr'},
+        'settings': {'darkMode': False, 'language': 'fr', 'theme': 'light'},
         'authProvider': 'email',
         'fcmToken': data.get('fcmToken', '')
     }
     users_collection.insert_one(user_data)
     print(f"Utilisateur enregistré: {email}")
-    return jsonify({'email': email}), 201
+    return jsonify({'email': email, 'msg': 'Inscription réussie'}), 201
 
-# Connexion (corrigée avec logs détaillés)
+# Connexion
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
     print(f"Données reçues brutes: {data}")
-    email = data.get('email', '').strip()  # Nettoyer les espaces
-    password = data.get('password', '').strip()  # Nettoyer les espaces
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
     fcm_token = data.get('fcmToken', '')
     print(f"Tentative de connexion - Email: '{email}', Mot de passe: '{password}', FCM Token: '{fcm_token}'")
     
     if not email or not password:
         print("Email ou mot de passe manquant dans les données reçues")
-        return jsonify({'msg': 'Email ou mot de passe manquant'}), 400
+        return jsonify({'msg': 'Veuillez fournir un email et un mot de passe'}), 400
 
     medecin = medecins_collection.find_one({'email': email})
-    if medecin:
+    if medecin and 'motDePasse' in medecin:
         print(f"Médecin trouvé: {medecin}")
-        if 'motDePasse' in medecin:
-            print(f"Mot de passe haché stocké pour médecin: {medecin['motDePasse']}")
-            if verify_password(password, medecin['motDePasse']):
-                token = jwt.encode({
-                    'sub': email,
-                    'email': email,
-                    'role': 'medecin',
-                    'exp': datetime.utcnow() + timedelta(hours=24)
-                }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
-                medecins_collection.update_one({'email': email}, {'$set': {'fcmToken': fcm_token}})
-                print(f"Token généré pour médecin: {token}")
-                return jsonify({'access_token': token, 'email': email, 'role': 'medecin'}), 200
-            else:
-                print(f"Échec vérification mot de passe pour médecin: {email}")
+        if verify_password(password, medecin['motDePasse']):
+            token = jwt.encode({
+                'sub': email,
+                'email': email,
+                'role': 'medecin',
+                'exp': datetime.utcnow() + timedelta(hours=24)
+            }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+            medecins_collection.update_one({'email': email}, {'$set': {'fcmToken': fcm_token}})
+            print(f"Token généré pour médecin: {token}")
+            return jsonify({'access_token': token, 'email': email, 'role': 'medecin', 'msg': 'Connexion réussie'}), 200
         else:
-            print(f"Clé 'motDePasse' absente dans les données du médecin: {medecin}")
+            print(f"Échec vérification mot de passe pour médecin: {email}")
+            return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
 
     user = users_collection.find_one({'email': email})
-    if user:
+    if user and 'password' in user:
         print(f"Utilisateur trouvé: {user}")
-        if 'password' in user:
-            print(f"Mot de passe haché stocké pour utilisateur: {user['password']}")
-            if verify_password(password, user['password']):
-                token = jwt.encode({
-                    'sub': email,
-                    'email': email,
-                    'role': 'patient',
-                    'exp': datetime.utcnow() + timedelta(hours=24)
-                }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
-                users_collection.update_one({'email': email}, {'$set': {'fcmToken': fcm_token}})
-                print(f"Token généré pour utilisateur: {token}")
-                return jsonify({'access_token': token, 'email': email, 'role': 'patient'}), 200
-            else:
-                print(f"Échec vérification mot de passe pour utilisateur: {email}")
+        if verify_password(password, user['password']):
+            token = jwt.encode({
+                'sub': email,
+                'email': email,
+                'role': 'patient',
+                'exp': datetime.utcnow() + timedelta(hours=24)
+            }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+            users_collection.update_one({'email': email}, {'$set': {'fcmToken': fcm_token}})
+            print(f"Token généré pour utilisateur: {token}")
+            return jsonify({'access_token': token, 'email': email, 'role': 'patient', 'msg': 'Connexion réussie'}), 200
         else:
-            print(f"Clé 'password' absente dans les données de l'utilisateur: {user}")
+            print(f"Échec vérification mot de passe pour utilisateur: {email}")
+            return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
 
     print(f"Échec connexion: {email} - Aucune correspondance trouvée")
     return jsonify({'msg': 'Email ou mot de passe incorrect'}), 401
@@ -453,7 +447,7 @@ def create_rendezvous():
 
     if not all([medecin_email, date, heure, user_email]):
         print("Données manquantes:", data)
-        return jsonify({'msg': 'Données manquantes'}), 400
+        return jsonify({'msg': 'Veuillez fournir toutes les informations requises'}), 400
 
     if email != user_email:
         print(f"Non autorisé: {email} != {user_email}")
@@ -469,25 +463,28 @@ def create_rendezvous():
         parsed_date = datetime.strptime(date, '%Y-%m-%d')
         if parsed_date.weekday() >= 5:
             print(f"Week-end: {date}")
-            return jsonify({'msg': 'Pas de disponibilité le week-end'}), 400
+            return jsonify({'msg': 'Les rendez-vous ne sont pas disponibles le week-end'}), 400
+        if parsed_date.date() < datetime.utcnow().date():
+            print(f"Date passée: {date}")
+            return jsonify({'msg': 'Impossible de prendre un rendez-vous dans le passé'}), 400
     except ValueError:
         print(f"Format date invalide: {date}")
-        return jsonify({'msg': 'Format de date invalide'}), 400
+        return jsonify({'msg': 'Format de date invalide (YYYY-MM-DD)'}), 400
 
     try:
         hour, minute = map(int, heure.split(':'))
         if hour < 8 or hour >= 18 or minute not in [0, 30]:
             print(f"Heure hors plage: {heure}")
-            return jsonify({'msg': 'Horaire hors plage (8:00-18:00)'}), 400
+            return jsonify({'msg': 'Les rendez-vous doivent être pris entre 8:00 et 18:00, par tranches de 30 minutes'}), 400
     except (ValueError, IndexError):
         print(f"Format heure invalide: {heure}")
-        return jsonify({'msg': 'Format d’heure invalide'}), 400
+        return jsonify({'msg': 'Format d’heure invalide (HH:MM)'}), 400
 
     rdv_conflicts = medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', [])
     for rdv in rdv_conflicts:
         if rdv.get('date') == date and rdv.get('heure') == heure and rdv.get('statut') in ['accepté', 'en attente']:
             print(f"Conflit: {date} à {heure}")
-            return jsonify({'msg': 'Créneau déjà réservé'}), 400
+            return jsonify({'msg': 'Ce créneau est déjà réservé'}), 400
 
     rdv_user = {'medecinId': medecin_email, 'date': date, 'heure': heure, 'motif': motif, 'statut': 'en attente'}
     if document:
@@ -505,20 +502,32 @@ def create_rendezvous():
         'message': f'Rendez-vous demandé avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure}',
         'date': datetime.utcnow().isoformat(),
         'lue': False,
-        'type': 'rendezvous_demande'
+        'type': 'rendezvous_demande',
+        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': medecin_email}
     }
     notif_medecin = {
         'id': str(ObjectId()),
         'message': f'Nouvelle demande de rendez-vous de {user["firstName"]} {user["lastName"]} le {date} à {heure}',
         'date': datetime.utcnow().isoformat(),
         'lue': False,
-        'type': 'rendezvous_demande'
+        'type': 'rendezvous_demande',
+        'data': {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
     }
     users_collection.update_one({'email': user_email}, {'$push': {'notifications': notif_user}})
     medecins_collection.update_one({'email': medecin_email}, {'$push': {'notifications': notif_medecin}})
     
-    send_fcm_notification(user.get('fcmToken'), "Rendez-vous demandé", notif_user['message'])
-    send_fcm_notification(medecin.get('fcmToken'), "Nouvelle demande", notif_medecin['message'])
+    send_fcm_notification(
+        user.get('fcmToken'), 
+        "Rendez-vous demandé", 
+        notif_user['message'],
+        {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': medecin_email}
+    )
+    send_fcm_notification(
+        medecin.get('fcmToken'), 
+        "Nouvelle demande", 
+        notif_medecin['message'],
+        {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
+    )
     
     print(f"Rendez-vous créé: {user_email} avec {medecin_email}")
     return jsonify({'msg': 'Rendez-vous demandé avec succès'}), 200
@@ -536,7 +545,7 @@ def manage_rendezvous(action):
     heure = data.get('heure')
     if not all([user_email, date, heure]):
         print(f"Données manquantes: {data}")
-        return jsonify({'msg': 'Données manquantes'}), 400
+        return jsonify({'msg': 'Veuillez fournir toutes les informations requises'}), 400
 
     medecin = medecins_collection.find_one({'email': email})
     if not medecin:
@@ -567,13 +576,19 @@ def manage_rendezvous(action):
                         'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été accepté',
                         'date': datetime.utcnow().isoformat(),
                         'lue': False,
-                        'type': 'rendezvous_accepte'
+                        'type': 'rendezvous_accepte',
+                        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
                     }
                 }
             },
             array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
         )
-        send_fcm_notification(user.get('fcmToken'), "Rendez-vous accepté", f"Votre rendez-vous le {date} à {heure} est confirmé")
+        send_fcm_notification(
+            user.get('fcmToken'), 
+            "Rendez-vous accepté", 
+            f"Votre rendez-vous le {date} à {heure} est confirmé",
+            {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+        )
         print(f"Rendez-vous accepté: {user_email}, {date}, {heure}")
         return jsonify({'msg': 'Rendez-vous accepté'}), 200
     elif action == 'refuse':
@@ -592,12 +607,18 @@ def manage_rendezvous(action):
                         'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été refusé',
                         'date': datetime.utcnow().isoformat(),
                         'lue': False,
-                        'type': 'rendezvous_refuse'
+                        'type': 'rendezvous_refuse',
+                        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
                     }
                 }
             }
         )
-        send_fcm_notification(user.get('fcmToken'), "Rendez-vous refusé", f"Votre rendez-vous le {date} à {heure} a été refusé")
+        send_fcm_notification(
+            user.get('fcmToken'), 
+            "Rendez-vous refusé", 
+            f"Votre rendez-vous le {date} à {heure} a été refusé",
+            {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+        )
         print(f"Rendez-vous refusé: {user_email}, {date}, {heure}")
         return jsonify({'msg': 'Rendez-vous refusé'}), 200
     print(f"Action non reconnue: {action}")
@@ -615,7 +636,7 @@ def upload_document():
 
     if not all([nom, url, medecin_email]):
         print(f"Données manquantes: {data}")
-        return jsonify({'msg': 'Données manquantes'}), 400
+        return jsonify({'msg': 'Veuillez fournir toutes les informations requises'}), 400
 
     document = {'nom': nom, 'url': url, 'medecinEmail': medecin_email, 'timestamp': datetime.utcnow().isoformat()}
     conn = sqlite3.connect('documents.db')
@@ -632,12 +653,18 @@ def upload_document():
         'message': f"{email} vous a envoyé le document '{nom}'",
         'date': datetime.utcnow().isoformat(),
         'lue': False,
-        'type': 'document_envoye'
+        'type': 'document_envoye',
+        'data': {'documentUrl': url, 'userEmail': email}
     }
     medecins_collection.update_one({'email': medecin_email}, {'$push': {'notifications': notif}})
-    send_fcm_notification(medecin.get('fcmToken'), "Nouveau document", notif['message'])
+    send_fcm_notification(
+        medecin.get('fcmToken'), 
+        "Nouveau document", 
+        notif['message'],
+        {'documentUrl': url, 'userEmail': email}
+    )
     print(f"Document téléversé: {email} pour {medecin_email}")
-    return jsonify({'msg': 'Document téléversé'}), 201
+    return jsonify({'msg': 'Document téléversé avec succès'}), 201
 
 # Mettre à jour les paramètres
 @app.route('/api/user/settings', methods=['PUT'])
@@ -647,18 +674,18 @@ def update_settings():
     data = request.get_json()
     print(f"Requête /api/user/settings: {data}, identité: {email}")
 
-    if not isinstance(data, dict) or 'darkMode' not in data or 'language' not in data:
+    if not isinstance(data, dict) or 'darkMode' not in data or 'language' not in data or 'theme' not in data:
         print(f"Données invalides: {data}")
-        return jsonify({'msg': 'darkMode et language requis'}), 400
+        return jsonify({'msg': 'darkMode, language et theme sont requis'}), 400
 
-    settings = {'darkMode': data['darkMode'], 'language': data['language']}
+    settings = {'darkMode': data['darkMode'], 'language': data['language'], 'theme': data['theme']}
     collection = users_collection if users_collection.find_one({'email': email}) else medecins_collection
     result = collection.update_one({'email': email}, {'$set': {'settings': settings}})
     
     if result.modified_count > 0:
         print(f"Paramètres mis à jour: {email}")
-        return jsonify({'msg': 'Paramètres mis à jour', 'settings': settings}), 200
-    return jsonify({'msg': 'Aucune modification'}), 200
+        return jsonify({'msg': 'Paramètres mis à jour avec succès', 'settings': settings}), 200
+    return jsonify({'msg': 'Aucune modification effectuée'}), 200
 
 # Récupérer disponibilités médecin
 @app.route('/api/medecin/disponibilites', methods=['GET'])
@@ -687,7 +714,7 @@ def mark_notification_as_read():
 
     if not notification_id:
         print(f"notificationId manquant: {data}")
-        return jsonify({'msg': 'notificationId manquant'}), 400
+        return jsonify({'msg': 'notificationId requis'}), 400
 
     collection = users_collection if users_collection.find_one({'email': email}) else medecins_collection
     result = collection.update_one(
@@ -712,7 +739,7 @@ def save_consultation():
     required_fields = ['userEmail', 'date', 'heure', 'diagnostics', 'prescriptions']
     if not all(field in data for field in required_fields):
         print(f"Champs manquants: {data}")
-        return jsonify({'msg': 'Champs manquants'}), 400
+        return jsonify({'msg': 'Tous les champs requis ne sont pas fournis'}), 400
 
     consultation = {
         'userEmail': data['userEmail'],
@@ -739,13 +766,19 @@ def save_consultation():
         'message': f"Votre consultation du {data['date']} à {data['heure']} a été enregistrée",
         'date': datetime.utcnow().isoformat(),
         'lue': False,
-        'type': 'consultation_enregistree'
+        'type': 'consultation_enregistree',
+        'data': {'consultationDate': data['date'], 'consultationHeure': data['heure'], 'medecinEmail': email}
     }
     users_collection.update_one({'email': data['userEmail']}, {'$push': {'notifications': notif}})
-    send_fcm_notification(user.get('fcmToken'), "Consultation enregistrée", notif['message'])
+    send_fcm_notification(
+        user.get('fcmToken'), 
+        "Consultation enregistrée", 
+        notif['message'],
+        {'consultationDate': data['date'], 'consultationHeure': data['heure'], 'medecinEmail': email}
+    )
     
     print(f"Consultation enregistrée: {data['userEmail']}")
-    return jsonify({'msg': 'Consultation enregistrée'}), 201
+    return jsonify({'msg': 'Consultation enregistrée avec succès'}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

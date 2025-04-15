@@ -1,27 +1,27 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
       <ion-menu-button menuId="mainMenu"></ion-menu-button>
     </ion-buttons>
     <ion-title>{{ fullName }}</ion-title>
     <ion-buttons slot="end">
-      <!-- Icône de notification (visible pour patients et médecins) -->
-      <div *ngIf="isLoggedIn" class="notifications">
-        <ion-icon name="notifications-outline" [id]="popoverTriggerId"></ion-icon>
+      <!-- Icône de notification -->
+      <div *ngIf="isLoggedIn" class="notifications" (click)="toggleNotifications()">
+        <ion-icon name="notifications-outline"></ion-icon>
         <span class="badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
       </div>
 
       <!-- Popover pour les notifications -->
-      <ion-popover [trigger]="popoverTriggerId" (didDismiss)="showNotifications = false" [dismissOnSelect]="false">
+      <ion-popover [trigger]="popoverTriggerId" [isOpen]="showNotifications" (didDismiss)="showNotifications = false" [dismissOnSelect]="false">
         <ng-template>
           <ion-content>
             <ion-list>
-              <ion-item *ngFor="let notification of notifications" [ngClass]="{'unread': !notification.lue}">
+              <ion-item *ngFor="let notification of notifications" [ngClass]="{'unread': !notification.lue}" (click)="handleNotificationClick(notification)">
                 <ion-label>
                   <p>{{ notification.message }}</p>
                   <p class="date">{{ notification.date | date:'short' }}</p>
                 </ion-label>
-                <ion-button slot="end" *ngIf="!notification.lue" (click)="markNotificationAsRead(notification.id)">
+                <ion-button slot="end" *ngIf="!notification.lue" (click)="markNotificationAsRead(notification.id); $event.stopPropagation()">
                   Marquer comme lue
                 </ion-button>
               </ion-item>
@@ -33,13 +33,13 @@
         </ng-template>
       </ion-popover>
 
-      <!-- Avatar et bouton de déconnexion -->
+      <!-- Avatar et déconnexion -->
       <ion-avatar *ngIf="isLoggedIn" (click)="triggerFileInput()">
         <img *ngIf="profilePictureUrl" [src]="profilePictureUrl" alt="Photo de profil" (error)="handleImageError($event)" />
         <ion-icon *ngIf="!profilePictureUrl" name="person-circle-outline"></ion-icon>
       </ion-avatar>
       <input type="file" accept="image/*" #fileInput style="display: none;" (change)="onFileChange($event)" />
-      <ion-button *ngIf="isLoggedIn" (click)="logout()">Déconnexion</ion-button>
+      <ion-button *ngIf="isLoggedIn" (click)="logout()" color="light">Déconnexion</ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

@@ -1,123 +1,110 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { LoadingController, ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-accueil-medecin',
   templateUrl: './accueil-medecin.page.html',
   styleUrls: ['./accueil-medecin.page.scss'],
-  standalone: false, // Déclaré dans un module
+  standalone:false
 })
 export class AccueilMedecinPage implements OnInit {
-  medecin: any = {};
+  user: any = {};
+  fullName: string = 'Médecin';
   rendezVousDemandes: any[] = [];
   rendezVousConfirmes: any[] = [];
-  email: string | null = null;
-  isLoggedIn: boolean = false;
-  role: string | null = null;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private loadingController: LoadingController,
+    private toastController: ToastController
+  ) {}
 
-  ngOnInit() {
-    this.authService.isLoggedIn$.subscribe((loggedIn) => {
-      this.isLoggedIn = loggedIn;
-      this.role = localStorage.getItem('role');
-      this.email = localStorage.getItem('email');
+  async ngOnInit() {
+    const email = localStorage.getItem('email');
+    if (email) {
+      const loading = await this.loadingController.create({
+        message: 'Chargement des données...',
+      });
+      await loading.present();
 
-      if (this.isLoggedIn && this.role === 'medecin' && this.email) {
-        this.loadMedecinData(this.email);
-        this.loadRendezVous(this.email);
-      } else {
-        console.error('Utilisateur non connecté ou rôle incorrect');
-        this.router.navigate(['/login']);
-      }
+      this.authService.getMedecin(email).subscribe({
+        next: (response: any) => {
+          this.user = response || {};
+          this.fullName = `${this.user.prenom || ''} ${this.user.nom || ''}`.trim() || 'Médecin';
+          this.rendezVousDemandes = this.user.rendezVousDemandes || [];
+          this.rendezVousConfirmes = this.user.rendezVousConfirmes || [];
+          loading.dismiss();
+        },
+        error: async (err: any) => {
+          console.error('Erreur chargement données médecin:', err);
+          await this.showToast('Erreur', 'Échec du chargement des données');
+          loading.dismiss();
+        },
+      });
+    }
+  }
+
+  async manageRendezVous(rdv: any, action: string) {
+    const loading = await this.loadingController.create({
+      message: 'Traitement en cours...',
+    });
+    await loading.present();
+
+    this.authService
+      .manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, action)
+      .subscribe({
+        next: async () => {
+          await this.refreshData();
+          await this.showToast('Succès', `Rendez-vous ${action === 'accept' ? 'accepté' : 'refusé'} avec succès`, 'success');
+          loading.dismiss();
+        },
+        error: async (err: any) => {
+          console.error(`Erreur lors de ${action} rendez-vous:`, err);
+          await this.showToast('Erreur', 'Échec de l’opération. Veuillez réessayer.');
+          loading.dismiss();
+        },
+      });
+  }
+
+  async refreshData() {
+    const email = localStorage.getItem('email');
+    if (email) {
+      this.authService.getMedecin(email).subscribe({
+        next: (response: any) => {
+          this.user = response || {};
+          this.rendezVousDemandes = this.user.rendezVousDemandes || [];
+          this.rendezVousConfirmes = this.user.rendezVousConfirmes || [];
+        },
+        error: async (err: any) => {
+          console.error('Erreur rechargement données:', err);
+          await this.showToast('Erreur', 'Échec du rechargement des données');
+        },
+      });
+    }
+  }
+
+  goToConsultation(rdv: any) {
+    this.router.navigate(['/consultation'], {
+      queryParams: {
+        userEmail: rdv.userEmail,
+        date: rdv.date,
+        heure: rdv.heure,
+      },
     });
   }
 
-  loadMedecinData(email: string) {
-    this.authService.getMedecin(email).subscribe({
-      next: (response) => {
-        this.medecin = response;
-        console.log('Médecin chargé :', this.medecin);
-      },
-      error: (err) => {
-        console.error('Erreur chargement données médecin :', err);
-        alert('Erreur chargement données médecin : ' + err.message);
-        this.router.navigate(['/login']);
-      },
+  async showToast(header: string, message: string, color: string = 'danger') {
+    const toast = await this.toastController.create({
+      header,
+      message,
+      duration: 3000,
+      position: 'top',
+      color: color === 'success' ? 'success' : 'danger',
+      buttons: [{ text: 'OK', role: 'cancel' }],
     });
-  }
-
-  loadRendezVous(email: string) {
-    this.authService.getMedecinDisponibilites(email).subscribe({
-      next: (response) => {
-        this.rendezVousDemandes = response.rendezVousDemandes || [];
-        this.rendezVousConfirmes = response.rendezVousConfirmes || [];
-        console.log('Rendez-vous demandés chargés :', this.rendezVousDemandes);
-        console.log('Rendez-vous confirmés chargés :', this.rendezVousConfirmes);
-      },
-      error: (err) => {
-        console.error('Erreur chargement rendez-vous :', err);
-        alert('Erreur chargement rendez-vous : ' + err.message);
-      },
-    });
-  }
-
-  manageRendezVous(rdv: any, action: string) {
-    if (!this.email) {
-      console.error('Email non trouvé dans localStorage');
-      alert('Erreur : utilisateur non identifié.');
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const userEmail = rdv?.userEmail || rdv?.patientEmail;
-    const date = rdv?.date;
-    const heure = rdv?.heure;
-
-    if (!userEmail || !date || !heure) {
-      console.error('Données manquantes pour gérer le rendez-vous :', { userEmail, date, heure, rdv });
-      alert('Erreur : données du rendez-vous incomplètes.');
-      return;
-    }
-
-    this.authService.manageRendezVous(userEmail, date, heure, action).subscribe({
-      next: (response) => {
-        console.log(`Rendez-vous ${action} avec succès :`, response);
-        this.loadRendezVous(this.email!);
-        alert(`Rendez-vous ${action === 'accept' ? 'accepté' : 'refusé'} avec succès !`);
-      },
-      error: (err) => {
-        console.error(`Erreur action ${action} sur rendez-vous :`, err);
-        alert(`Erreur : ${err.message || 'Échec'}`);
-      },
-    });
-  }
-
-  addConsultation(rdv: any) {
-    const userEmail = rdv?.userEmail || rdv?.patientEmail;
-    const date = rdv?.date;
-    const heure = rdv?.heure;
-
-    if (!userEmail || !date || !heure) {
-      console.error('Données manquantes pour consultation :', { userEmail, date, heure, rdv });
-      alert('Erreur : données incomplètes.');
-      return;
-    }
-
-    this.router.navigate(['/consultation'], { queryParams: { userEmail, date, heure } });
-  }
-
-  viewDocuments(userEmail: string) {
-    if (!userEmail) {
-      console.error('userEmail manquant pour viewDocuments');
-      alert('Erreur : email manquant.');
-      return;
-    }
-    this.router.navigate(['/documents'], { queryParams: { userEmail } });
-  }
-
-  goToLogin() {
-    this.router.navigate(['/login']);
+    await toast.present();
   }
 }

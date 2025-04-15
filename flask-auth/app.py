@@ -558,71 +558,167 @@ def manage_rendezvous(action):
         return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
 
     user = users_collection.find_one({'email': user_email})
-    if action == 'accept':
-        medecins_collection.update_one(
-            {'email': email},
-            {
-                '$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}},
-                '$push': {'rendezVousConfirmes': {**rdv, 'statut': 'accepté'}}
-            }
-        )
+    if not user:
+        print(f"Utilisateur non trouvé: {user_email}")
+        return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
+    try:
+        if action == 'accept':
+            medecins_collection.update_one(
+                {'email': email},
+                {
+                    '$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}},
+                    '$push': {'rendezVousConfirmes': {**rdv, 'statut': 'accepté'}}
+                }
+            )
+            users_collection.update_one(
+                {'email': user_email},
+                {
+                    '$set': {'rendezVousFuturs.$[elem].statut': 'accepté'},
+                    '$push': {
+                        'notifications': {
+                            'id': str(ObjectId()),
+                            'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été accepté',
+                            'date': datetime.utcnow().isoformat(),
+                            'lue': False,
+                            'type': 'rendezvous_accepte',
+                            'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+                        }
+                    }
+                },
+                array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
+            )
+            send_fcm_notification(
+                user.get('fcmToken'), 
+                "Rendez-vous accepté", 
+                f"Votre rendez-vous le {date} à {heure} est confirmé",
+                {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+            )
+            print(f"Rendez-vous accepté: {user_email}, {date}, {heure}")
+            return jsonify({'msg': 'Rendez-vous accepté'}), 200
+        elif action == 'refuse':
+            medecins_collection.update_one(
+                {'email': email},
+                {'$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}}}
+            )
+            users_collection.update_one(
+                {'email': user_email},
+                {
+                    '$pull': {'rendezVousFuturs': {'medecinId': email, 'date': date, 'heure': heure}},
+                    '$push': {
+                        'historiqueRendezVous': {**rdv, 'statut': 'refusé'},
+                        'notifications': {
+                            'id': str(ObjectId()),
+                            'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été refusé',
+                            'date': datetime.utcnow().isoformat(),
+                            'lue': False,
+                            'type': 'rendezvous_refuse',
+                            'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+                        }
+                    }
+                }
+            )
+            send_fcm_notification(
+                user.get('fcmToken'), 
+                "Rendez-vous refusé", 
+                f"Votre rendez-vous le {date} à {heure} a été refusé",
+                {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+            )
+            print(f"Rendez-vous refusé: {user_email}, {date}, {heure}")
+            return jsonify({'msg': 'Rendez-vous refusé'}), 200
+        else:
+            print(f"Action non reconnue: {action}")
+            return jsonify({'msg': 'Action non reconnue'}), 400
+    except Exception as e:
+        print(f"Erreur lors de la gestion du rendez-vous ({action}): {str(e)}")
+        return jsonify({'msg': 'Erreur serveur interne', 'error': str(e)}), 500
+
+# Annuler un rendez-vous par le patient
+@app.route('/api/user/rendezvous/cancel', methods=['PUT'])
+@jwt_required()
+def cancel_rendezvous():
+    email = get_jwt_identity()
+    data = request.get_json()
+    print(f"Annulation rendez-vous: {data}")
+
+    medecin_email = data.get('medecinEmail')
+    user_email = data.get('userEmail')
+    date = data.get('date')
+    heure = data.get('heure')
+
+    if not all([medecin_email, user_email, date, heure]):
+        print(f"Données manquantes: {data}")
+        return jsonify({'msg': 'Veuillez fournir toutes les informations requises'}), 400
+
+    if email != user_email:
+        print(f"Non autorisé: {email} != {user_email}")
+        return jsonify({'msg': 'Non autorisé'}), 403
+
+    user = users_collection.find_one({'email': user_email})
+    medecin = medecins_collection.find_one({'email': medecin_email})
+    if not user or not medecin:
+        print(f"Utilisateur ou médecin non trouvé: {user_email}, {medecin_email}")
+        return jsonify({'msg': 'Utilisateur ou médecin non trouvé'}), 404
+
+    rdv_user = next((r for r in user.get('rendezVousFuturs', []) if r.get('medecinId') == medecin_email and r.get('date') == date and r.get('heure') == heure), None)
+    if not rdv_user:
+        print(f"Rendez-vous non trouvé pour utilisateur: {user_email}, {date}, {heure}")
+        return jsonify({'msg': 'Rendez-vous non trouvé'}), 404
+
+    try:
         users_collection.update_one(
             {'email': user_email},
             {
-                '$set': {'rendezVousFuturs.$[elem].statut': 'accepté'},
+                '$pull': {'rendezVousFuturs': {'medecinId': medecin_email, 'date': date, 'heure': heure}},
                 '$push': {
+                    'historiqueRendezVous': {**rdv_user, 'statut': 'annulé'},
                     'notifications': {
                         'id': str(ObjectId()),
-                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été accepté',
+                        'message': f'Vous avez annulé votre rendez-vous du {date} à {heure}',
                         'date': datetime.utcnow().isoformat(),
                         'lue': False,
-                        'type': 'rendezvous_accepte',
-                        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+                        'type': 'rendezvous_annule',
+                        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': medecin_email}
                     }
                 }
-            },
-            array_filters=[{'elem.medecinId': email, 'elem.date': date, 'elem.heure': heure}]
+            }
         )
-        send_fcm_notification(
-            user.get('fcmToken'), 
-            "Rendez-vous accepté", 
-            f"Votre rendez-vous le {date} à {heure} est confirmé",
-            {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
-        )
-        print(f"Rendez-vous accepté: {user_email}, {date}, {heure}")
-        return jsonify({'msg': 'Rendez-vous accepté'}), 200
-    elif action == 'refuse':
         medecins_collection.update_one(
-            {'email': email},
-            {'$pull': {'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure}}}
-        )
-        users_collection.update_one(
-            {'email': user_email},
+            {'email': medecin_email},
             {
-                '$pull': {'rendezVousFuturs': {'medecinId': email, 'date': date, 'heure': heure}},
+                '$pull': {
+                    'rendezVousDemandes': {'userEmail': user_email, 'date': date, 'heure': heure},
+                    'rendezVousConfirmes': {'userEmail': user_email, 'date': date, 'heure': heure}
+                },
                 '$push': {
-                    'historiqueRendezVous': {**rdv, 'statut': 'refusé'},
                     'notifications': {
                         'id': str(ObjectId()),
-                        'message': f'Votre rendez-vous avec {medecin["prenom"]} {medecin["nom"]} le {date} à {heure} a été refusé',
+                        'message': f'{user["firstName"]} {user["lastName"]} a annulé le rendez-vous du {date} à {heure}',
                         'date': datetime.utcnow().isoformat(),
                         'lue': False,
-                        'type': 'rendezvous_refuse',
-                        'data': {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+                        'type': 'rendezvous_annule',
+                        'data': {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
                     }
                 }
             }
         )
         send_fcm_notification(
-            user.get('fcmToken'), 
-            "Rendez-vous refusé", 
-            f"Votre rendez-vous le {date} à {heure} a été refusé",
-            {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+            user.get('fcmToken'),
+            "Rendez-vous annulé",
+            f"Votre rendez-vous du {date} à {heure} a été annulé",
+            {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': medecin_email}
         )
-        print(f"Rendez-vous refusé: {user_email}, {date}, {heure}")
-        return jsonify({'msg': 'Rendez-vous refusé'}), 200
-    print(f"Action non reconnue: {action}")
-    return jsonify({'msg': 'Action non reconnue'}), 400
+        send_fcm_notification(
+            medecin.get('fcmToken'),
+            "Rendez-vous annulé",
+            f"Le rendez-vous de {user['firstName']} {user['lastName']} du {date} à {heure} a été annulé",
+            {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
+        )
+        print(f"Rendez-vous annulé: {user_email}, {date}, {heure}")
+        return jsonify({'msg': 'Rendez-vous annulé avec succès'}), 200
+    except Exception as e:
+        print(f"Erreur lors de l'annulation du rendez-vous: {str(e)}")
+        return jsonify({'msg': 'Erreur serveur interne', 'error': str(e)}), 500
 
 # Téléverser un document
 @app.route('/api/user/document', methods=['POST'])

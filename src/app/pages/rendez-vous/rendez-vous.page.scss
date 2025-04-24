@@ -1,61 +1,48 @@
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  text-align: center;
+ion-content {
+  --background: #f6f8fa;
+}
 
-  .calendar-day-header {
-    font-weight: bold;
-    padding: 10px;
-    background-color: #f0f0f0;
+// Styles pour le message d'avertissement des médecins
+ion-item[color="warning"] {
+  --background: #fff9e6;
+  --border-color: #ffd86e;
+  border-left: 4px solid #ffd86e;
+  border-radius: 8px;
+  margin: 16px 0;
+  
+  ion-icon {
+    color: #e6a700;
+    font-size: 24px;
   }
-
-  .calendar-day {
-    padding: 10px;
-    border: 1px solid #ddd;
-    cursor: pointer;
-
-    &.available {
-      background-color: #4caf50;
-      color: white;
-    }
-
-    &.unavailable {
-      background-color: #f44336;
-      color: white;
-      cursor: not-allowed;
-    }
-
-    &.today {
-      border: 2px solid #2196f3;
-    }
-
-    &.selected {
-      border: 2px solid #ffeb3b;
-    }
+  
+  h2 {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #e6a700;
+  }
+  
+  p {
+    color: #996e00;
   }
 }
 
-.time-slots, .document-upload {
-  margin-top: 20px;
-  padding: 10px;
-
-  ion-item {
-    cursor: pointer;
-
-    &.unavailable-slot {
-      background-color: #f44336;
-      color: white;
-      cursor: not-allowed;
+ion-card {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  
+  ion-card-header {
+    background-color: #3880ff;
+    color: white;
+    
+    ion-card-title {
+      font-size: 1.3rem;
+      font-weight: 600;
     }
-  }
-
-  ion-input {
-    margin-bottom: 10px;
-  }
-
-  input[type="file"] {
-    margin: 10px 0;
+    
+    ion-card-subtitle {
+      color: rgba(255, 255, 255, 0.8);
+    }
   }
 }
 
@@ -63,5 +50,284 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
+  margin: 16px 0;
+  padding: 8px 0;
+  
+  span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  
+  ion-button {
+    --padding-start: 16px;
+    --padding-end: 16px;
+  }
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+  
+  .calendar-day-header {
+    font-weight: bold;
+    padding: 10px 0;
+    text-align: center;
+    color: #555;
+  }
+  
+  .calendar-day {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    
+    &.available {
+      background-color: #36b37e;
+      color: white;
+      box-shadow: 0 2px 5px rgba(54, 179, 126, 0.3);
+      transform: scale(1);
+      
+      &:hover {
+        transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(54, 179, 126, 0.4);
+      }
+    }
+    
+    &.unavailable {
+      background-color: #f0f0f0;
+      color: #999;
+      cursor: default;
+    }
+    
+    &.today {
+      border: 2px solid #3880ff;
+    }
+    
+    &.selected {
+      background-color: #3880ff;
+      color: white;
+      box-shadow: 0 2px 8px rgba(56, 128, 255, 0.5);
+      transform: scale(1.1);
+    }
+  }
+}
+
+.time-slots {
+  margin: 24px 0;
+  
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #333;
+  }
+  
+  ion-list {
+    border-radius: 8px;
+    overflow: hidden;
+    
+    ion-item {
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --min-height: 56px;
+      transition: all 0.2s ease;
+      
+      &:hover:not(.unavailable-slot) {
+        --background: #f0f7ff;
+      }
+      
+      &.unavailable-slot {
+        --background: #f0f0f0;
+        --color: #999;
+        cursor: default;
+        opacity: 0.6;
+      }
+    }
+    
+    ion-label {
+      font-size: 16px;
+    }
+    
+    ion-icon {
+      color: #3880ff;
+      font-size: 20px;
+    }
+  }
+}
+
+.document-upload {
+  margin: 24px 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #333;
+  }
+  
+  ion-input {
+    --background: #fff;
+    --padding-start: 16px;
+    --border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+  }
+  
+  input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    margin: 12px 0;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  
+  p {
+    margin-top: 16px;
+    color: #36b37e;
+    font-weight: 500;
+  }
+}
+
+ion-button[expand="block"] {
+  margin: 16px 0;
+  height: 48px;
+  --border-radius: 8px;
+  font-weight: 500;
+  
+  &:first-of-type {
+    margin-top: 24px;
+  }
+}
+
+// Nouvelles classes pour les étapes
+.step-indicator {
+  display: flex;
+  align-items: center;
+  margin: 24px 0 16px;
+  
+  .step-number {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3880ff;
+    color: white;
+    font-weight: bold;
+    margin-right: 12px;
+    box-shadow: 0 2px 5px rgba(56, 128, 255, 0.3);
+  }
+  
+  .step-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+// Légende pour le calendrier
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 16px 0;
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+    
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-right: 8px;
+      
+      &.available {
+        background-color: #36b37e;
+      }
+      
+      &.unavailable {
+        background-color: #f0f0f0;
+      }
+      
+      &.today {
+        background-color: white;
+        border: 2px solid #3880ff;
+      }
+    }
+    
+    span {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+}
+
+// Styles pour les jours spéciaux
+.calendar-day {
+  &.weekend {
+    opacity: 0.7;
+  }
+  
+  &.outside-month {
+    opacity: 0.3;
+  }
+}
+
+// Upload de fichier
+.file-upload-container {
+  margin: 16px 0;
+  
+  .file-info {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #e6f7ff;
+    border-radius: 8px;
+    
+    ion-icon {
+      margin-right: 8px;
+      color: #3880ff;
+    }
+    
+    span {
+      font-size: 14px;
+      color: #333;
+    }
+  }
+}
+
+// Item de succès
+.success-item {
+  --background: #e6f7f1;
+  --border-radius: 8px;
+  margin-top: 16px;
+}
+
+// Icône de titre
+.title-icon {
+  margin-right: 8px;
+  font-size: 1.3em;
+  vertical-align: middle;
+}
+
+// Boutons d'action
+.action-buttons {
+  margin-top: 32px;
+  border-top: 1px solid #eee;
+  padding-top: 24px;
 }

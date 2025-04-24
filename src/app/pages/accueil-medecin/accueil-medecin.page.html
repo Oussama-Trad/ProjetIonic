@@ -1,76 +1,235 @@
 <ion-header>
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
-    </ion-buttons>
+  <ion-toolbar color="secondary">
     <ion-title>Tableau de bord médecin</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadRendezVous(medecin.email)">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-card class="welcome-card">
-    <ion-card-header>
-      <ion-card-title>Bienvenue, Dr. {{ fullName }}</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <p>Gérez vos rendez-vous et consultations en toute simplicité.</p>
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Rendez-vous demandés -->
+<ion-content class="ion-padding">
+  <div class="welcome-container" *ngIf="medecin">
+    <ion-avatar>
+      <img [src]="medecin.profilePicture || 'assets/default-doctor.png'" alt="Photo de profil">
+    </ion-avatar>
+    <div class="welcome-text">
+      <h1>Bonjour, Dr. {{ medecin.firstName }} {{ medecin.lastName }}</h1>
+      <p>{{ medecin.specialite }}</p>
+    </div>
+  </div>
+  
+  <!-- Cartes de statistiques -->
+  <ion-grid>
+    <ion-row>
+      <ion-col size="6" size-md="3">
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-icon">
+              <ion-icon name="people"></ion-icon>
+            </div>
+            <div class="stat-info">
+              <h2>{{ stats.totalPatients }}</h2>
+              <p>Patients</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+      
+      <ion-col size="6" size-md="3">
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-icon">
+              <ion-icon name="calendar-check"></ion-icon>
+            </div>
+            <div class="stat-info">
+              <h2>{{ stats.rdvConfirmes }}</h2>
+              <p>RDV confirmés</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+      
+      <ion-col size="6" size-md="3">
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-icon">
+              <ion-icon name="timer"></ion-icon>
+            </div>
+            <div class="stat-info">
+              <h2>{{ stats.rdvEnAttente }}</h2>
+              <p>En attente</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+      
+      <ion-col size="6" size-md="3">
+        <ion-card class="stat-card">
+          <ion-card-content>
+            <div class="stat-icon">
+              <ion-icon name="document-text"></ion-icon>
+            </div>
+            <div class="stat-info">
+              <h2>{{ stats.consultations }}</h2>
+              <p>Consultations</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+  
+  <!-- Actions rapides -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Rendez-vous en attente</ion-card-title>
+      <ion-card-title>
+        <ion-icon name="flash"></ion-icon>
+        Actions rapides
+      </ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list *ngIf="rendezVousDemandes.length > 0; else noDemandes">
-        <ion-item *ngFor="let rdv of rendezVousDemandes" class="rdv-item">
-          <ion-label>
-            <h3>{{ rdv.date }} à {{ rdv.heure }}</h3>
-            <p>Patient: {{ rdv.userEmail }}</p>
-            <p>Motif: {{ rdv.motif }}</p>
-            <p>Statut: <span class="status-pending">{{ rdv.statut }}</span></p>
-          </ion-label>
-          <ion-button slot="end" color="success" (click)="manageRendezVous(rdv, 'accept')">
-            Accepter
-          </ion-button>
-          <ion-button slot="end" color="danger" (click)="manageRendezVous(rdv, 'refuse')">
-            Refuser
-          </ion-button>
-        </ion-item>
-      </ion-list>
-      <ng-template #noDemandes>
-        <ion-item>
-          <ion-label>Aucun rendez-vous en attente</ion-label>
-        </ion-item>
-      </ng-template>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6" size-md="4">
+            <ion-button expand="block" routerLink="/disponibilites-medecin" color="tertiary">
+              <ion-icon name="calendar-outline" slot="start"></ion-icon>
+              Gérer mes disponibilités
+            </ion-button>
+          </ion-col>
+          <ion-col size="6" size-md="4">
+            <ion-button expand="block" routerLink="/rendez-vous-medecin">
+              <ion-icon name="time-outline" slot="start"></ion-icon>
+              Voir mes rendez-vous
+            </ion-button>
+          </ion-col>
+          <ion-col size="6" size-md="4">
+            <ion-button expand="block" routerLink="/messages-list">
+              <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+              Messages
+            </ion-button>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
     </ion-card-content>
   </ion-card>
-
-  <!-- Rendez-vous confirmés -->
+  
+  <!-- Rendez-vous d'aujourd'hui -->
   <ion-card>
-    <ion-card-header>
-      <ion-card-title>Rendez-vous confirmés</ion-card-title>
+    <ion-card-header (click)="toggleRendezVousExpand()">
+      <ion-card-title>
+        <ion-icon name="today"></ion-icon>
+        Rendez-vous d'aujourd'hui
+        <ion-badge color="primary">{{ rendezVousAujourdhui.length }}</ion-badge>
+        <ion-icon [name]="isRendezVousExpanded ? 'chevron-up' : 'chevron-down'" class="toggle-icon"></ion-icon>
+      </ion-card-title>
     </ion-card-header>
-    <ion-card-content>
-      <ion-list *ngIf="rendezVousConfirmes.length > 0; else noConfirmes">
-        <ion-item *ngFor="let rdv of rendezVousConfirmes" class="rdv-item">
-          <ion-label>
-            <h3>{{ rdv.date }} à {{ rdv.heure }}</h3>
-            <p>Patient: {{ rdv.userEmail }}</p>
-            <p>Motif: {{ rdv.motif }}</p>
-            <p>Statut: <span class="status-accepted">{{ rdv.statut }}</span></p>
+    
+    <ion-card-content *ngIf="isRendezVousExpanded">
+      <ion-list>
+        <ion-item *ngIf="rendezVousAujourdhui.length === 0" lines="none" class="empty-list-item">
+          <ion-label class="ion-text-center">
+            <ion-icon name="calendar"></ion-icon>
+            <h2>Aucun rendez-vous aujourd'hui</h2>
+            <p>Profitez de cette journée plus calme.</p>
           </ion-label>
-          <ion-button slot="end" color="primary" (click)="goToConsultation(rdv)">
-            Gérer consultation
-          </ion-button>
+        </ion-item>
+        
+        <ion-item *ngFor="let rdv of rendezVousAujourdhui" [ngClass]="{'rdv-confirmed': rdv.status === 'confirmé', 'rdv-pending': rdv.status === 'en attente'}">
+          <ion-avatar slot="start">
+            <img [src]="rdv.userProfilePicture || 'assets/default-avatar.png'" alt="Avatar du patient">
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ rdv.userName }}</h2>
+            <h3>
+              <ion-icon name="time-outline"></ion-icon>
+              {{ rdv.heure }}
+            </h3>
+            <p><ion-icon name="information-circle-outline"></ion-icon> {{ rdv.motif || 'Consultation' }}</p>
+            <ion-badge [color]="rdv.status === 'confirmé' ? 'success' : 'warning'">{{ rdv.status }}</ion-badge>
+          </ion-label>
+          
+          <ion-buttons slot="end">
+            <ion-button color="primary" (click)="goToConsultation(rdv)" *ngIf="rdv.status === 'confirmé'">
+              <ion-icon name="document-text-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            
+            <ion-button color="success" (click)="confirmRendezVous(rdv)" *ngIf="rdv.status === 'en attente'">
+              <ion-icon name="checkmark-circle-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            
+            <ion-button color="danger" (click)="rejectRendezVous(rdv)" *ngIf="rdv.status === 'en attente'">
+              <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            
+            <ion-button color="secondary" (click)="contactPatient(rdv)">
+              <ion-icon name="chatbubble-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ion-buttons>
         </ion-item>
       </ion-list>
-      <ng-template #noConfirmes>
-        <ion-item>
-          <ion-label>Aucun rendez-vous confirmé</ion-label>
+      
+      <ion-button expand="block" fill="outline" (click)="goToRendezVous()" class="action-button">
+        <ion-icon name="calendar" slot="start"></ion-icon>
+        Voir tous les rendez-vous
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+  
+  <!-- Rendez-vous en attente -->
+  <ion-card>
+    <ion-card-header (click)="togglePatientsExpand()">
+      <ion-card-title>
+        <ion-icon name="hourglass"></ion-icon>
+        Demandes en attente
+        <ion-badge color="warning">{{ rendezVousAttente.length }}</ion-badge>
+        <ion-icon [name]="isPatientsExpanded ? 'chevron-up' : 'chevron-down'" class="toggle-icon"></ion-icon>
+      </ion-card-title>
+    </ion-card-header>
+    
+    <ion-card-content *ngIf="isPatientsExpanded">
+      <ion-list>
+        <ion-item *ngIf="rendezVousAttente.length === 0" lines="none" class="empty-list-item">
+          <ion-label class="ion-text-center">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <h2>Aucune demande en attente</h2>
+            <p>Toutes les demandes ont été traitées.</p>
+          </ion-label>
         </ion-item>
-      </ng-template>
+        
+        <ion-item *ngFor="let rdv of rendezVousAttente">
+          <ion-avatar slot="start">
+            <img [src]="rdv.userProfilePicture || 'assets/default-avatar.png'" alt="Avatar du patient">
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ rdv.userName }}</h2>
+            <h3>
+              <ion-icon name="calendar-outline"></ion-icon>
+              {{ rdv.date | date:'EEEE d MMMM yyyy':'':'fr' }} • 
+              <ion-icon name="time-outline"></ion-icon>
+              {{ rdv.heure }}
+            </h3>
+            <p><ion-icon name="information-circle-outline"></ion-icon> {{ rdv.motif || 'Consultation' }}</p>
+          </ion-label>
+          
+          <ion-buttons slot="end">
+            <ion-button color="success" (click)="confirmRendezVous(rdv)">
+              <ion-icon name="checkmark-circle-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            
+            <ion-button color="danger" (click)="rejectRendezVous(rdv)">
+              <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+            
+            <ion-button color="secondary" (click)="contactPatient(rdv)">
+              <ion-icon name="chatbubble-outline" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-item>
+      </ion-list>
     </ion-card-content>
   </ion-card>
 </ion-content>
+
+<app-tabs-medecin></app-tabs-medecin>

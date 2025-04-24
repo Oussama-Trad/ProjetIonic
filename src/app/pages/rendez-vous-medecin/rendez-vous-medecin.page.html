@@ -1,0 +1,149 @@
+<ion-header>
+  <ion-toolbar color="secondary">
+    <ion-title>Gestion des rendez-vous</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="loadRendezVous()">
+        <ion-icon name="refresh"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-segment [(ngModel)]="currentFilter" (ionChange)="filterChanged()">
+    <ion-segment-button value="all">
+      <ion-label>Tous</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="en attente">
+      <ion-label>En attente</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="confirmé">
+      <ion-label>Confirmés</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Filtres de date -->
+  <ion-card class="date-filter-card">
+    <ion-card-content>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="6">
+            <ion-item>
+              <ion-label position="stacked">Du</ion-label>
+              <ion-input type="date" [(ngModel)]="startDate" (ionChange)="dateFilterChanged()"></ion-input>
+            </ion-item>
+          </ion-col>
+          <ion-col size="6">
+            <ion-item>
+              <ion-label position="stacked">Au</ion-label>
+              <ion-input type="date" [(ngModel)]="endDate" (ionChange)="dateFilterChanged()"></ion-input>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Vue calendrier -->
+  <ion-card class="calendar-card">
+    <ion-card-header>
+      <ion-card-title>
+        <div class="calendar-header">
+          <ion-button fill="clear" (click)="previousMonth()">
+            <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+          <span>{{ getMonthYear() }}</span>
+          <ion-button fill="clear" (click)="nextMonth()">
+            <ion-icon name="chevron-forward-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="calendar-grid">
+        <div class="calendar-day-header" *ngFor="let day of ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']">
+          {{ day }}
+        </div>
+        <div 
+          class="calendar-day" 
+          *ngFor="let day of calendarDays" 
+          [ngClass]="{
+            'today': day.isToday,
+            'has-appointments': day.hasAppointments,
+            'outside-month': day.date.getMonth() !== currentMonth.getMonth(),
+            'weekend': day.date.getDay() === 0 || day.date.getDay() === 6
+          }"
+          (click)="showAppointmentsForDay(day)">
+          {{ day.date.getDate() }}
+          <div class="appointment-badge" *ngIf="day.appointmentsCount > 0">{{ day.appointmentsCount }}</div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Liste des rendez-vous -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="calendar"></ion-icon>
+        Liste des rendez-vous 
+        <ion-badge color="primary">{{ rendezVousFiltered.length }}</ion-badge>
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngIf="isLoading" class="loading-item">
+          <ion-spinner name="crescent"></ion-spinner>
+          <ion-label>Chargement des rendez-vous...</ion-label>
+        </ion-item>
+
+        <ng-container *ngIf="!isLoading">
+          <ion-item *ngFor="let rdv of rendezVousFiltered" [ngClass]="{'rdv-confirmed': rdv.status === 'confirmé', 'rdv-pending': rdv.status === 'en attente'}">
+            <ion-avatar slot="start">
+              <img [src]="rdv.userProfilePicture || 'assets/default-avatar.png'" alt="Avatar du patient">
+            </ion-avatar>
+            <ion-label>
+              <h2>{{ rdv.userName }}</h2>
+              <h3>
+                <ion-icon name="calendar-outline"></ion-icon>
+                {{ rdv.date | date:'EEEE d MMMM yyyy':'':'fr' }} • 
+                <ion-icon name="time-outline"></ion-icon>
+                {{ rdv.heure }}
+              </h3>
+              <p><ion-icon name="information-circle-outline"></ion-icon> Motif: {{ rdv.motif || 'Non spécifié' }}</p>
+              <ion-badge [color]="rdv.status === 'confirmé' ? 'success' : 'warning'">{{ rdv.status }}</ion-badge>
+            </ion-label>
+
+            <ion-buttons slot="end">
+              <ion-button color="primary" (click)="goToConsultation(rdv)" *ngIf="rdv.status === 'confirmé'">
+                <ion-icon name="document-text-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+              
+              <ion-button color="success" (click)="confirmRendezVous(rdv)" *ngIf="rdv.status === 'en attente'">
+                <ion-icon name="checkmark-circle-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+              
+              <ion-button color="danger" (click)="rejectRendezVous(rdv)" *ngIf="rdv.status === 'en attente'">
+                <ion-icon name="close-circle-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+              
+              <ion-button color="secondary" (click)="contactPatient(rdv)">
+                <ion-icon name="chatbubble-outline" slot="icon-only"></ion-icon>
+              </ion-button>
+            </ion-buttons>
+          </ion-item>
+
+          <ion-item *ngIf="rendezVousFiltered.length === 0 && !isLoading" class="empty-state">
+            <ion-label class="ion-text-center">
+              <ion-icon name="calendar-outline" class="empty-icon"></ion-icon>
+              <h2>Aucun rendez-vous trouvé</h2>
+              <p>Aucun rendez-vous ne correspond à vos critères de recherche.</p>
+            </ion-label>
+          </ion-item>
+        </ng-container>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
+
+<app-tabs-medecin></app-tabs-medecin> 

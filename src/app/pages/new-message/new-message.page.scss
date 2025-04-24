@@ -1,0 +1,111 @@
+ion-header ion-toolbar:last-child {
+  --background: var(--ion-color-light-shade);
+}
+
+ion-searchbar {
+  --border-radius: 20px;
+  --box-shadow: none;
+  --placeholder-opacity: 0.7;
+  --background: var(--ion-color-light);
+  margin: 5px 8px;
+}
+
+ion-content {
+  --background: var(--ion-color-light, #f4f5f8);
+}
+
+ion-list {
+  background: transparent;
+  padding: 8px 0;
+}
+
+ion-item {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 12px;
+  --background-activated: rgba(0, 0, 0, 0.04);
+  --background: var(--ion-color-light, #f4f5f8);
+  --background-hover: var(--ion-color-light-shade, #e0e0e0);
+  margin: 0.5rem 0.8rem;
+  border-radius: 8px;
+  --border-width: 0;
+  
+  h2 {
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+  }
+  
+  ion-note {
+    display: flex;
+    align-items: center;
+    
+    ion-icon {
+      font-size: 20px;
+    }
+  }
+}
+
+ion-avatar {
+  width: 50px;
+  height: 50px;
+  margin-right: 12px;
+}
+
+.empty-search, .empty-state, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 50vh;
+  padding: 0 20px;
+  
+  ion-icon {
+    font-size: 70px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+  
+  h2 {
+    margin-top: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    margin-top: 5px;
+    font-size: 16px;
+    color: var(--ion-color-medium);
+    margin-bottom: 24px;
+  }
+}
+
+.error-container {
+  ion-icon {
+    color: var(--ion-color-danger-tint);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+ion-item {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+ion-list ion-item:nth-child(1) { animation-delay: 0.05s; }
+ion-list ion-item:nth-child(2) { animation-delay: 0.1s; }
+ion-list ion-item:nth-child(3) { animation-delay: 0.15s; }
+ion-list ion-item:nth-child(4) { animation-delay: 0.2s; }
+ion-list ion-item:nth-child(5) { animation-delay: 0.25s; }
+ 

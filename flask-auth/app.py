@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import bcrypt
 from flask import Flask, jsonify, request, make_response, redirect, url_for
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
 from jwt.exceptions import InvalidTokenError
 from authlib.integrations.flask_client import OAuth
 import os
@@ -43,6 +43,7 @@ client = MongoClient('mongodb://localhost:27017/')
 db = client['cabinet_medical']
 users_collection = db['users']
 medecins_collection = db['Medecins']
+messages_collection = db['messages']
 
 # Connexion SQLite pour les documents
 def init_sqlite():
@@ -205,7 +206,7 @@ def google_callback():
         return redirect(frontend_url)
     except Exception as e:
         print(f"Error in Google OAuth callback: {str(e)}")
-        return jsonify({'error': 'Échec de l’authentification Google', 'details': str(e)}), 500
+        return jsonify({'error': 'Échec de l\'authentification Google', 'details': str(e)}), 500
 
 @app.route('/api/auth/facebook')
 def facebook_login():
@@ -261,7 +262,7 @@ def facebook_callback():
         return redirect(frontend_url)
     except Exception as e:
         print(f"Error in Facebook OAuth callback: {str(e)}")
-        return jsonify({'error': 'Échec de l’authentification Facebook', 'details': str(e)}), 500
+        return jsonify({'error': 'Échec de l\'authentification Facebook', 'details': str(e)}), 500
 
 # Inscription
 @app.route('/api/register', methods=['POST'])
@@ -416,16 +417,34 @@ def get_medecin():
 @app.route('/api/medecins', methods=['GET'])
 def get_all_medecins():
     search_query = request.args.get('search', '')
-    medecins = medecins_collection.find({
-        '$or': [
+    specialite = request.args.get('specialite', '')
+    
+    query = {}
+    
+    # Ajouter la recherche textuelle si présente
+    if search_query:
+        query['$or'] = [
             {'prenom': {'$regex': search_query, '$options': 'i'}},
             {'nom': {'$regex': search_query, '$options': 'i'}},
             {'specialite': {'$regex': search_query, '$options': 'i'}}
         ]
-    }, {'_id': 0, 'motDePasse': 0})
+    
+    # Ajouter le filtre par spécialité si présent
+    if specialite:
+        query['specialite'] = specialite
+    
+    medecins = medecins_collection.find(query, {'_id': 0, 'motDePasse': 0})
     medecins_list = list(medecins)
-    print(f"Liste médecins: {len(medecins_list)} résultats pour '{search_query}'")
+    print(f"Liste médecins: {len(medecins_list)} résultats pour '{search_query}' et spécialité '{specialite}'")
     return jsonify(medecins_list), 200
+
+# Récupérer toutes les spécialités disponibles
+@app.route('/api/specialites', methods=['GET'])
+def get_all_specialites():
+    specialites = medecins_collection.distinct('specialite')
+    specialites = [s for s in specialites if s]  # Filtrer les valeurs vides
+    print(f"Liste des spécialités: {len(specialites)} trouvées")
+    return jsonify(specialites), 200
 
 # Créer un rendez-vous
 @app.route('/api/rendezvous', methods=['POST'])
@@ -478,7 +497,7 @@ def create_rendezvous():
             return jsonify({'msg': 'Les rendez-vous doivent être pris entre 8:00 et 18:00, par tranches de 30 minutes'}), 400
     except (ValueError, IndexError):
         print(f"Format heure invalide: {heure}")
-        return jsonify({'msg': 'Format d’heure invalide (HH:MM)'}), 400
+        return jsonify({'msg': 'Format d\'heure invalide (HH:MM)'}), 400
 
     rdv_conflicts = medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', [])
     for rdv in rdv_conflicts:
@@ -800,6 +819,132 @@ def get_medecin_disponibilites():
     print(f"Disponibilités: {email}")
     return jsonify(disponibilites), 200
 
+# Récupérer les créneaux disponibles pour une date spécifique
+@app.route('/api/medecin/creneaux-disponibles', methods=['GET'])
+def get_medecin_creneaux_disponibles():
+    email = request.args.get('email')
+    date = request.args.get('date')
+    
+    if not email or not date:
+        return jsonify({'msg': 'Email du médecin et date requis'}), 400
+    
+    try:
+        # Valider le format de la date
+        parsed_date = datetime.strptime(date, '%Y-%m-%d')
+        
+        # Vérifier si c'est un weekend
+        if parsed_date.weekday() >= 5:
+            return jsonify({
+                'disponible': False,
+                'message': 'Les rendez-vous ne sont pas disponibles le week-end',
+                'creneaux': []
+            }), 200
+            
+        # Vérifier si la date est dans le passé
+        if parsed_date.date() < datetime.utcnow().date():
+            return jsonify({
+                'disponible': False,
+                'message': 'Impossible de prendre un rendez-vous dans le passé',
+                'creneaux': []
+            }), 200
+    except ValueError:
+        return jsonify({'msg': 'Format de date invalide (YYYY-MM-DD)'}), 400
+    
+    # Récupérer le médecin
+    medecin = medecins_collection.find_one({'email': email})
+    if not medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    
+    # Créer tous les créneaux possibles (8h-18h par tranches de 30min)
+    tous_creneaux = []
+    for heure in range(8, 18):
+        for minute in [0, 30]:
+            tous_creneaux.append(f"{heure:02d}:{minute:02d}")
+    
+    # Récupérer les rendez-vous existants pour cette date
+    rdv_existants = []
+    for rdv in medecin.get('rendezVousConfirmes', []) + medecin.get('rendezVousDemandes', []):
+        if rdv.get('date') == date and rdv.get('statut') in ['accepté', 'en attente']:
+            rdv_existants.append(rdv.get('heure'))
+    
+    # Filtrer les créneaux disponibles
+    creneaux_disponibles = [creneau for creneau in tous_creneaux if creneau not in rdv_existants]
+    
+    print(f"Créneaux disponibles pour {email} le {date}: {len(creneaux_disponibles)}/{len(tous_creneaux)}")
+    return jsonify({
+        'disponible': True,
+        'message': 'Créneaux disponibles',
+        'creneaux': creneaux_disponibles
+    }), 200
+
+# Mettre à jour les disponibilités du médecin
+@app.route('/api/medecin/disponibilites', methods=['PUT'])
+@jwt_required()
+def update_medecin_disponibilites():
+    email = get_jwt_identity()
+    role = get_jwt().get('role', '')
+    
+    # Vérifier que l'utilisateur est bien un médecin
+    if role != 'medecin':
+        print(f"Tentative non autorisée de mise à jour des disponibilités: {email}, rôle: {role}")
+        return jsonify({'msg': 'Seuls les médecins peuvent mettre à jour leurs disponibilités'}), 403
+    
+    data = request.get_json()
+    if not data or not isinstance(data, dict) or 'disponibilites' not in data:
+        print(f"Données invalides pour la mise à jour des disponibilités: {data}")
+        return jsonify({'msg': 'Veuillez fournir des disponibilités valides'}), 400
+    
+    disponibilites = data.get('disponibilites')
+    
+    # Valider le format des disponibilités
+    jours_semaine = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+    for jour in disponibilites:
+        if jour not in jours_semaine:
+            print(f"Jour invalide: {jour}")
+            return jsonify({'msg': f'Jour invalide: {jour}'}), 400
+        
+        if not isinstance(disponibilites[jour], list):
+            print(f"Format invalide pour {jour}: {disponibilites[jour]}")
+            return jsonify({'msg': f'Les disponibilités pour {jour} doivent être une liste d\'heures'}), 400
+        
+        for heure in disponibilites[jour]:
+            try:
+                h, m = map(int, heure.split(':'))
+                if h < 8 or h >= 18 or m not in [0, 30]:
+                    print(f"Heure invalide: {heure}")
+                    return jsonify({'msg': 'Les heures doivent être entre 8:00 et 18:00, par tranches de 30 minutes'}), 400
+            except (ValueError, IndexError):
+                print(f"Format d'heure invalide: {heure}")
+                return jsonify({'msg': 'Format d\'heure invalide (HH:MM)'}), 400
+    
+    # Mettre à jour les disponibilités du médecin
+    result = medecins_collection.update_one(
+        {'email': email},
+        {'$set': {'disponibilites': disponibilites}}
+    )
+    
+    if result.modified_count > 0:
+        print(f"Disponibilités mises à jour pour {email}")
+        
+        # Créer une notification pour le médecin
+        notif = {
+            'id': str(ObjectId()),
+            'message': 'Vos disponibilités ont été mises à jour avec succès',
+            'date': datetime.utcnow().isoformat(),
+            'lue': False,
+            'type': 'disponibilites_update',
+            'data': {}
+        }
+        medecins_collection.update_one({'email': email}, {'$push': {'notifications': notif}})
+        
+        return jsonify({
+            'msg': 'Disponibilités mises à jour avec succès',
+            'disponibilites': disponibilites
+        }), 200
+    
+    print(f"Aucune modification effectuée pour {email}")
+    return jsonify({'msg': 'Aucune modification effectuée'}), 200
+
 # Marquer notification comme lue
 @app.route('/api/user/notification/mark-as-read', methods=['PUT'])
 @jwt_required()
@@ -876,5 +1021,183 @@ def save_consultation():
     print(f"Consultation enregistrée: {data['userEmail']}")
     return jsonify({'msg': 'Consultation enregistrée avec succès'}), 201
 
+# Chat API routes
+@app.route('/api/chat/messages', methods=['GET'])
+@jwt_required()
+def get_chat_messages():
+    email = get_jwt_identity()
+    other_user = request.args.get('otherUser')
+    
+    if not other_user:
+        return jsonify({'msg': 'Utilisateur de chat non spécifié'}), 400
+    
+    # Trouvez les messages entre les deux utilisateurs
+    messages = list(messages_collection.find({
+        '$or': [
+            {'sender': email, 'receiver': other_user},
+            {'sender': other_user, 'receiver': email}
+        ]
+    }).sort('timestamp', 1))
+    
+    # Convertir ObjectId en string pour la sérialisation JSON
+    for message in messages:
+        message['_id'] = str(message['_id'])
+    
+    print(f"Messages trouvés: {len(messages)} entre {email} et {other_user}")
+    return jsonify(messages), 200
+
+@app.route('/api/chat/messages', methods=['POST'])
+@jwt_required()
+def send_chat_message():
+    email = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data or not isinstance(data, dict):
+        return jsonify({'msg': 'Données invalides'}), 400
+    
+    receiver = data.get('receiver')
+    content = data.get('content')
+    
+    if not receiver or not content:
+        return jsonify({'msg': 'Destinataire et contenu requis'}), 400
+    
+    # Vérifier si le destinataire existe (patient ou médecin)
+    user = users_collection.find_one({'email': receiver}) or medecins_collection.find_one({'email': receiver})
+    if not user:
+        return jsonify({'msg': 'Destinataire non trouvé'}), 404
+    
+    # Créer le message
+    message = {
+        'sender': email,
+        'receiver': receiver,
+        'content': content,
+        'timestamp': datetime.utcnow().isoformat(),
+        'read': False
+    }
+    
+    result = messages_collection.insert_one(message)
+    message['_id'] = str(result.inserted_id)
+    
+    # Envoyer une notification
+    notif = {
+        'id': str(ObjectId()),
+        'message': f'Nouveau message de {email}',
+        'date': datetime.utcnow().isoformat(),
+        'lue': False,
+        'type': 'nouveau_message',
+        'data': {'senderEmail': email}
+    }
+    
+    if receivers_collection := users_collection.find_one({'email': receiver}):
+        users_collection.update_one({'email': receiver}, {'$push': {'notifications': notif}})
+        send_fcm_notification(
+            receivers_collection.get('fcmToken'), 
+            "Nouveau message", 
+            notif['message'],
+            {'senderEmail': email}
+        )
+    elif receivers_collection := medecins_collection.find_one({'email': receiver}):
+        medecins_collection.update_one({'email': receiver}, {'$push': {'notifications': notif}})
+        send_fcm_notification(
+            receivers_collection.get('fcmToken'), 
+            "Nouveau message", 
+            notif['message'],
+            {'senderEmail': email}
+        )
+    
+    print(f"Message envoyé: {email} -> {receiver}")
+    return jsonify(message), 200
+
+@app.route('/api/chat/mark-as-read', methods=['PUT'])
+@jwt_required()
+def mark_messages_as_read():
+    email = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data or not isinstance(data, dict):
+        return jsonify({'msg': 'Données invalides'}), 400
+    
+    sender = data.get('sender')
+    
+    if not sender:
+        return jsonify({'msg': 'Expéditeur requis'}), 400
+    
+    # Marquer tous les messages de l'expéditeur comme lus
+    result = messages_collection.update_many(
+        {'sender': sender, 'receiver': email, 'read': False},
+        {'$set': {'read': True}}
+    )
+    
+    print(f"{result.modified_count} messages marqués comme lus")
+    return jsonify({'msg': 'Messages marqués comme lus', 'count': result.modified_count}), 200
+
+@app.route('/api/chat/all-messages', methods=['GET'])
+@jwt_required()
+def get_all_user_messages():
+    email = get_jwt_identity()
+    
+    # Récupérer tous les messages où l'utilisateur est soit expéditeur soit destinataire
+    messages = list(messages_collection.find({
+        '$or': [
+            {'sender': email},
+            {'receiver': email}
+        ]
+    }).sort('timestamp', 1))
+    
+    # Convertir ObjectId en string pour la sérialisation JSON
+    for message in messages:
+        message['_id'] = str(message['_id'])
+    
+    print(f"Tous les messages trouvés pour {email}: {len(messages)}")
+    return jsonify(messages), 200
+
 if __name__ == '__main__':
+    # Initialiser les disponibilités des médecins qui n'en ont pas
+    print("Vérification des disponibilités des médecins...")
+    medecins_sans_disponibilites = medecins_collection.find({"disponibilites": {"$exists": False}})
+    count = 0
+    
+    # Disponibilités par défaut pour tous les jours de la semaine (lundi-vendredi)
+    disponibilites_par_defaut = {
+        "lundi": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                 "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
+        "mardi": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                 "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
+        "mercredi": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
+        "jeudi": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                 "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
+        "vendredi": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
+                    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"],
+        "samedi": [],
+        "dimanche": []
+    }
+    
+    for medecin in medecins_sans_disponibilites:
+        medecins_collection.update_one(
+            {"_id": medecin["_id"]},
+            {"$set": {"disponibilites": disponibilites_par_defaut}}
+        )
+        count += 1
+    
+    # Vérifier également les médecins qui ont un tableau disponibilités vide
+    medecins_disponibilites_vides = medecins_collection.find({"disponibilites": []})
+    for medecin in medecins_disponibilites_vides:
+        medecins_collection.update_one(
+            {"_id": medecin["_id"]},
+            {"$set": {"disponibilites": disponibilites_par_defaut}}
+        )
+        count += 1
+    
+    # Vérifier également les médecins qui ont un objet disponibilités vide
+    medecins_disponibilites_objet_vide = medecins_collection.find({"disponibilites": {}})
+    for medecin in medecins_disponibilites_objet_vide:
+        medecins_collection.update_one(
+            {"_id": medecin["_id"]},
+            {"$set": {"disponibilites": disponibilites_par_defaut}}
+        )
+        count += 1
+    
+    print(f"Disponibilités ajoutées pour {count} médecins")
+    
     app.run(debug=True, host='0.0.0.0', port=5000)

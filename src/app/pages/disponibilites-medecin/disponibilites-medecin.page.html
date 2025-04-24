@@ -1,0 +1,86 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/accueil-medecin"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Gérer mes disponibilités</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="saveDisponibilites()" color="primary">
+        <ion-icon name="save-outline" slot="start"></ion-icon>
+        Enregistrer
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Mes disponibilités</ion-card-title>
+      <ion-card-subtitle>Sélectionnez les créneaux horaires où vous êtes disponible pour chaque jour de la semaine</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-segment [(ngModel)]="jourSelectionne" (ionChange)="selectJour(jourSelectionne)">
+        <ion-segment-button *ngFor="let jour of joursSemaine" [value]="jour">
+          <ion-label>{{ jour | titlecase }}</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <div class="actions-container">
+        <ion-button size="small" fill="outline" (click)="copierJourPrecedent()">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Copier du jour précédent
+        </ion-button>
+        <ion-button size="small" fill="outline" (click)="copierJourSuivant()">
+          <ion-icon name="arrow-forward-outline" slot="start"></ion-icon>
+          Copier du jour suivant
+        </ion-button>
+        <ion-button size="small" fill="outline" (click)="copierVersAutresJours()">
+          <ion-icon name="copy-outline" slot="start"></ion-icon>
+          Copier vers tous les jours
+        </ion-button>
+        <ion-button size="small" fill="outline" color="danger" (click)="effacerJour()">
+          <ion-icon name="trash-outline" slot="start"></ion-icon>
+          Effacer ce jour
+        </ion-button>
+      </div>
+
+      <div class="heures-container">
+        <ion-chip 
+          *ngFor="let heure of heuresDisponibles" 
+          [color]="isHeureSelected(heure) ? 'primary' : 'medium'"
+          (click)="toggleHeure(heure)"
+          [outline]="!isHeureSelected(heure)"
+        >
+          <ion-label>{{ heure }}</ion-label>
+          <ion-icon *ngIf="isHeureSelected(heure)" name="checkmark-circle"></ion-icon>
+        </ion-chip>
+      </div>
+
+      <div class="summary-container">
+        <h4>Résumé des disponibilités pour {{ jourSelectionne | titlecase }}</h4>
+        <p *ngIf="disponibilites[jourSelectionne].length === 0">
+          Aucune disponibilité définie pour ce jour
+        </p>
+        <ion-badge *ngFor="let heure of disponibilites[jourSelectionne]" color="primary">
+          {{ heure }}
+        </ion-badge>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Instructions</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ul>
+        <li>Sélectionnez un jour de la semaine dans l'onglet ci-dessus</li>
+        <li>Cliquez sur les créneaux horaires pour les ajouter ou les supprimer de vos disponibilités</li>
+        <li>Les créneaux en bleu sont sélectionnés, ceux en gris ne le sont pas</li>
+        <li>Utilisez les boutons de copie pour dupliquer vos disponibilités entre les jours</li>
+        <li>N'oubliez pas d'enregistrer vos modifications en cliquant sur le bouton "Enregistrer" en haut à droite</li>
+      </ul>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

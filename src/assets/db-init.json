@@ -1,0 +1,220 @@
+{
+  "medecins": [
+    {
+      "email": "dr.martin@example.com",
+      "password": "pass123",
+      "firstName": "Thomas",
+      "lastName": "Martin",
+      "phoneNumber": "0612345678",
+      "specialite": "Cardiologie",
+      "address": "15 Avenue des Champs-Élysées, 75008 Paris",
+      "description": "Cardiologue spécialisé dans les maladies cardiovasculaires avec plus de 15 ans d'expérience.",
+      "disponibilites": {
+        "lundi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
+        "mardi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
+        "mercredi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
+        "jeudi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"],
+        "vendredi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
+      },
+      "profilePicture": "https://i.pravatar.cc/300?img=12",
+      "gender": "M"
+    },
+    {
+      "email": "dr.dubois@example.com",
+      "password": "pass123",
+      "firstName": "Marie",
+      "lastName": "Dubois",
+      "phoneNumber": "0623456789",
+      "specialite": "Dermatologie",
+      "address": "25 Rue de la République, 69002 Lyon",
+      "description": "Dermatologue spécialisée dans les maladies de la peau, des ongles et des cheveux.",
+      "disponibilites": {
+        "lundi": ["09:30", "10:30", "11:30", "14:30", "15:30", "16:30"],
+        "mardi": ["09:30", "10:30", "11:30", "14:30", "15:30", "16:30"],
+        "mercredi": [],
+        "jeudi": ["09:30", "10:30", "11:30", "14:30", "15:30", "16:30"],
+        "vendredi": ["09:30", "10:30", "11:30", "14:30", "15:30", "16:30"]
+      },
+      "profilePicture": "https://i.pravatar.cc/300?img=5",
+      "gender": "F"
+    },
+    {
+      "email": "dr.petit@example.com",
+      "password": "pass123",
+      "firstName": "Jean",
+      "lastName": "Petit",
+      "phoneNumber": "0634567890",
+      "specialite": "Pédiatrie",
+      "address": "8 Place du Capitole, 31000 Toulouse",
+      "description": "Pédiatre avec une approche bienveillante centrée sur l'enfant et sa famille.",
+      "disponibilites": {
+        "lundi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "mardi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "mercredi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "jeudi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "vendredi": []
+      },
+      "profilePicture": "https://i.pravatar.cc/300?img=11",
+      "gender": "M"
+    },
+    {
+      "email": "dr.bernard@example.com",
+      "password": "pass123",
+      "firstName": "Sophie",
+      "lastName": "Bernard",
+      "phoneNumber": "0645678901",
+      "specialite": "Ophtalmologie",
+      "address": "45 Boulevard Carnot, 13100 Aix-en-Provence",
+      "description": "Ophtalmologue pratiquant des examens visuels complets et le traitement des pathologies oculaires.",
+      "disponibilites": {
+        "lundi": ["14:00", "15:00", "16:00", "17:00"],
+        "mardi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "mercredi": ["09:00", "10:00", "11:00"],
+        "jeudi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+        "vendredi": ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
+      },
+      "profilePicture": "https://i.pravatar.cc/300?img=9",
+      "gender": "F"
+    },
+    {
+      "email": "dr.lambert@example.com",
+      "password": "pass123",
+      "firstName": "Philippe",
+      "lastName": "Lambert",
+      "phoneNumber": "0656789012",
+      "specialite": "Médecine générale",
+      "address": "12 Rue des Fleurs, 44000 Nantes",
+      "description": "Médecin généraliste à l'écoute des patients de tout âge pour des consultations variées.",
+      "disponibilites": {
+        "lundi": ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"],
+        "mardi": ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"],
+        "mercredi": ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"],
+        "jeudi": ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"],
+        "vendredi": ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"]
+      },
+      "profilePicture": "https://i.pravatar.cc/300?img=13",
+      "gender": "M"
+    }
+  ],
+  "patients": [
+    {
+      "email": "alice.dupont@example.com",
+      "password": "pass123",
+      "firstName": "Alice",
+      "lastName": "Dupont",
+      "phoneNumber": "0612345679",
+      "address": "28 Rue du Commerce, 75015 Paris",
+      "birthDate": "1985-04-15",
+      "gender": "F",
+      "profilePicture": "https://i.pravatar.cc/300?img=1"
+    },
+    {
+      "email": "bruno.martin@example.com",
+      "password": "pass123",
+      "firstName": "Bruno",
+      "lastName": "Martin",
+      "phoneNumber": "0623456780",
+      "address": "5 Rue Garibaldi, 69003 Lyon",
+      "birthDate": "1990-07-23",
+      "gender": "M",
+      "profilePicture": "https://i.pravatar.cc/300?img=3"
+    },
+    {
+      "email": "celine.durand@example.com",
+      "password": "pass123",
+      "firstName": "Céline",
+      "lastName": "Durand",
+      "phoneNumber": "0634567891",
+      "address": "14 Rue des Carmes, 31000 Toulouse",
+      "birthDate": "1978-11-10",
+      "gender": "F",
+      "profilePicture": "https://i.pravatar.cc/300?img=6"
+    },
+    {
+      "email": "david.moreau@example.com",
+      "password": "pass123",
+      "firstName": "David",
+      "lastName": "Moreau",
+      "phoneNumber": "0645678912",
+      "address": "33 Boulevard Victor Hugo, 13100 Aix-en-Provence",
+      "birthDate": "1982-02-28",
+      "gender": "M",
+      "profilePicture": "https://i.pravatar.cc/300?img=8"
+    },
+    {
+      "email": "emilie.rousseau@example.com",
+      "password": "pass123",
+      "firstName": "Emilie",
+      "lastName": "Rousseau",
+      "phoneNumber": "0656789123",
+      "address": "7 Place Royale, 44000 Nantes",
+      "birthDate": "1995-09-18",
+      "gender": "F",
+      "profilePicture": "https://i.pravatar.cc/300?img=10"
+    },
+    {
+      "email": "francois.leroy@example.com",
+      "password": "pass123",
+      "firstName": "François",
+      "lastName": "Leroy",
+      "phoneNumber": "0667891234",
+      "address": "22 Rue de la Liberté, 59000 Lille",
+      "birthDate": "1973-06-05",
+      "gender": "M",
+      "profilePicture": "https://i.pravatar.cc/300?img=14"
+    },
+    {
+      "email": "gabrielle.simon@example.com",
+      "password": "pass123",
+      "firstName": "Gabrielle",
+      "lastName": "Simon",
+      "phoneNumber": "0678912345",
+      "address": "9 Avenue Jean Jaurès, 33000 Bordeaux",
+      "birthDate": "1988-12-20",
+      "gender": "F",
+      "profilePicture": "https://i.pravatar.cc/300?img=15"
+    }
+  ],
+  "rendezvous": [
+    {
+      "userEmail": "alice.dupont@example.com",
+      "medecinEmail": "dr.martin@example.com",
+      "date": "2023-06-15",
+      "heure": "10:00",
+      "status": "confirmé",
+      "motif": "Consultation cardiaque annuelle"
+    },
+    {
+      "userEmail": "bruno.martin@example.com",
+      "medecinEmail": "dr.dubois@example.com",
+      "date": "2023-06-16",
+      "heure": "14:30",
+      "status": "en attente",
+      "motif": "Problèmes cutanés"
+    },
+    {
+      "userEmail": "celine.durand@example.com",
+      "medecinEmail": "dr.petit@example.com",
+      "date": "2023-06-14",
+      "heure": "11:00",
+      "status": "confirmé",
+      "motif": "Consultation pédiatrique pour mon enfant"
+    },
+    {
+      "userEmail": "david.moreau@example.com",
+      "medecinEmail": "dr.bernard@example.com",
+      "date": "2023-06-20",
+      "heure": "16:00",
+      "status": "en attente",
+      "motif": "Examen de la vue"
+    },
+    {
+      "userEmail": "emilie.rousseau@example.com",
+      "medecinEmail": "dr.lambert@example.com",
+      "date": "2023-06-18",
+      "heure": "09:30",
+      "status": "confirmé",
+      "motif": "Consultation générale"
+    }
+  ]
+} 

@@ -9,8 +9,8 @@ import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireMessagingModule } from '@angular/fire/compat/messaging';
 import { environment } from '../environments/environment';
 import { AppComponent } from './app.component';
-import { HeaderComponent } from './components/header/header.component';
 import { TabsComponent } from './components/tabs/tabs.component';
+import { TabsMedecinComponent } from './components/tabs-medecin/tabs-medecin.component';
 import { AccueilPage } from './pages/accueil/accueil.page';
 import { AccueilMedecinPage } from './pages/accueil-medecin/accueil-medecin.page';
 import { ConsultationPage } from './pages/consultation/consultation.page';
@@ -23,13 +23,16 @@ import { NotificationsComponent } from './pages/notifications/notifications.page
 import { ParametresPage } from './pages/parametres/parametres.page';
 import { RegisterPage } from './pages/register/register.page';
 import { RendezVousPage } from './pages/rendez-vous/rendez-vous.page';
+import { RendezVousMedecinPage } from './pages/rendez-vous-medecin/rendez-vous-medecin.page';
 import { TousLesMedecinsPage } from './pages/tous-les-medecins/tous-les-medecins.page';
+import { SharedModule } from './shared.module';
+import { ConversationComponent } from './pages/conversation/conversation.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    HeaderComponent,
     TabsComponent,
+    TabsMedecinComponent,
     AccueilPage,
     AccueilMedecinPage,
     ConsultationPage,
@@ -42,17 +45,20 @@ import { TousLesMedecinsPage } from './pages/tous-les-medecins/tous-les-medecins
     ParametresPage,
     RegisterPage,
     RendezVousPage,
+    RendezVousMedecinPage,
     TousLesMedecinsPage,
+    ConversationComponent
   ],
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
-    FormsModule, // Pour ngModel et autres directives de formulaires
-    CommonModule, // Pour ngClass, ngFor, date pipe, etc.
-    HttpClientModule, // Pour les requêtes HTTP
+    FormsModule,
+    CommonModule,
+    HttpClientModule,
     AppRoutingModule,
-    AngularFireModule.initializeApp(environment.firebase), // Initialisation Firebase
-    AngularFireMessagingModule, // Module pour FCM
+    SharedModule,
+    AngularFireModule.initializeApp(environment.firebase),
+    AngularFireMessagingModule,
   ],
   bootstrap: [AppComponent],
 })

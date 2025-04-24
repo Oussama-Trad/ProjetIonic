@@ -1,0 +1,45 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/admin"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Initialiser la base de données</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="container">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Initialisation de la base de données</ion-card-title>
+        <ion-card-subtitle>Ajouter plusieurs médecins à la base de données</ion-card-subtitle>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <p>
+          Cette opération va ajouter plusieurs médecins de spécialités différentes à la base de données.
+          Cette action est utile pour initialiser rapidement l'application avec des données de test.
+        </p>
+        
+        <div class="warning">
+          <ion-icon name="warning-outline"></ion-icon>
+          <p>Attention: Cette opération peut échouer si les médecins existent déjà (emails identiques).</p>
+        </div>
+        
+        <ion-button expand="block" (click)="initialiserMedecins()" [disabled]="isLoading">
+          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+          Initialiser les médecins
+        </ion-button>
+        
+        <div *ngIf="isLoading" class="loading-container">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Traitement en cours...</p>
+        </div>
+        
+        <div *ngIf="resultat" class="result-container">
+          <p>{{ resultat }}</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content> 

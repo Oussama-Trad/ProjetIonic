@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/messages-list" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>Nouveau message</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar 
+      [(ngModel)]="searchTerm"
+      (ionInput)="filterContacts()"
+      placeholder="Rechercher un contact..."
+      animated="true"
+      debounce="300">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refreshContacts($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-outline"
+      pullingText="Tirez pour rafraîchir"
+      refreshingSpinner="circles"
+      refreshingText="Chargement...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- État de chargement -->
+  <div *ngIf="isLoading" class="ion-padding ion-text-center">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Chargement des contacts...</p>
+  </div>
+
+  <!-- État d'erreur -->
+  <div *ngIf="hasError && !isLoading" class="error-container">
+    <ion-icon name="alert-circle-outline"></ion-icon>
+    <h2>Impossible de charger les contacts</h2>
+    <p>Vérifiez votre connexion internet et réessayez.</p>
+    <ion-button (click)="refreshContacts()" expand="block" fill="outline">
+      Réessayer
+    </ion-button>
+  </div>
+
+  <!-- Liste des contacts -->
+  <ion-list *ngIf="!isLoading && !hasError">
+    <!-- Message quand la recherche ne donne aucun résultat -->
+    <div *ngIf="filteredContacts.length === 0 && searchTerm" class="empty-search ion-padding ion-text-center">
+      <ion-icon name="search-outline"></ion-icon>
+      <h2>Aucun résultat</h2>
+      <p>Aucun contact ne correspond à "{{ searchTerm }}"</p>
+    </div>
+    
+    <!-- Message quand aucun contact n'est disponible -->
+    <div *ngIf="contacts.length === 0 && !searchTerm" class="empty-state">
+      <ion-icon name="people-outline"></ion-icon>
+      <h2>Aucun contact</h2>
+      <p>Vous n'avez pas encore de contacts disponibles.</p>
+    </div>
+    
+    <!-- Liste des contacts filtrés -->
+    <ion-item *ngFor="let contact of filteredContacts" (click)="startConversation(contact)" detail="true">
+      <ion-avatar slot="start">
+        <img [src]="contact.profilePicture || 'assets/avatar-placeholder.png'" alt="Avatar">
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ contact.displayName }}</h2>
+        <p>{{ contact.email }}</p>
+      </ion-label>
+      <ion-note slot="end" color="primary">
+        <ion-icon name="chatbubble-outline"></ion-icon>
+      </ion-note>
+    </ion-item>
+  </ion-list>
+</ion-content> 

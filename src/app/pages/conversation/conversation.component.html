@@ -1,0 +1,65 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/accueil" text="Retour"></ion-back-button>
+    </ion-buttons>
+    <ion-title>
+      <div class="user-info">
+        <ion-avatar>
+          <img [src]="getOtherUserPhoto()" alt="Photo de profil">
+        </ion-avatar>
+        <span>{{ getOtherUserName() }}</span>
+      </div>
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="chat-container">
+    <!-- Chargement -->
+    <div *ngIf="isLoading" class="loading-container">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Chargement des messages...</p>
+    </div>
+    
+    <!-- Aucun message -->
+    <div *ngIf="!isLoading && messages.length === 0" class="empty-chat">
+      <ion-icon name="chatbubble-outline" size="large"></ion-icon>
+      <h2>Aucun message</h2>
+      <p>Commencez à discuter avec {{ getOtherUserName() }}</p>
+    </div>
+    
+    <!-- Messages -->
+    <div class="messages-list" #messageContainer *ngIf="messages.length > 0">
+      <div *ngFor="let message of messages; let i = index; let isFirst = first; let isLast = last">
+        <!-- Afficher la date si c'est le premier message ou si la date change -->
+        <div class="date-divider" *ngIf="isFirst || (i > 0 && formatDate(messages[i-1]?.timestamp || '') !== formatDate(message.timestamp))">
+          {{ formatDate(message.timestamp) }}
+        </div>
+        
+        <div class="message" [ngClass]="{'own-message': isOwnMessage(message), 'other-message': !isOwnMessage(message)}">
+          <div class="message-content">
+            {{ message.content }}
+            <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <div class="input-container">
+    <ion-input 
+      type="text" 
+      placeholder="Tapez votre message..." 
+      [(ngModel)]="newMessage" 
+      (keyup.enter)="sendMessage()"
+      autocapitalize="sentences"
+      class="message-input">
+    </ion-input>
+    <ion-button (click)="sendMessage()" [disabled]="!newMessage.trim()">
+      <ion-icon name="send"></ion-icon>
+    </ion-button>
+  </div>
+</ion-footer>

@@ -1,0 +1,52 @@
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-container {
+  width: 100%;
+  height: 50vh;
+  margin-bottom: 16px;
+}
+
+ion-segment {
+  overflow-x: auto;
+}
+
+ion-segment-button {
+  min-width: 120px;
+}
+
+/* Styles pour les fenêtres d'info de Google Maps */
+::ng-deep .info-window {
+  padding: 8px;
+  max-width: 250px;
+}
+
+::ng-deep .info-window h3 {
+  margin-top: 0;
+  color: var(--ion-color-primary);
+  font-size: 16px;
+  font-weight: bold;
+}
+
+::ng-deep .info-window p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+::ng-deep .info-btn {
+  background-color: var(--ion-color-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+}
+
+::ng-deep .info-btn:hover {
+  background-color: var(--ion-color-primary-shade);
+}

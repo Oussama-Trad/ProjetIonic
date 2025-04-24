@@ -1,0 +1,61 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/tous-les-medecins"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Carte des cabinets médicaux</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="map-container">
+    <div #map id="map"></div>
+  </div>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Filtrer par spécialité</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-segment (ionChange)="filterBySpeciality($event.detail.value)" scrollable>
+        <ion-segment-button value="">
+          <ion-label>Tous</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Généraliste">
+          <ion-label>Généraliste</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Cardiologie">
+          <ion-label>Cardiologie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Dermatologie">
+          <ion-label>Dermatologie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Gynécologie">
+          <ion-label>Gynécologie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Ophtalmologie">
+          <ion-label>Ophtalmologie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Pédiatrie">
+          <ion-label>Pédiatrie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Psychiatrie">
+          <ion-label>Psychiatrie</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="Chirurgie">
+          <ion-label>Chirurgie</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Information</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Cliquez sur un marqueur pour voir les détails du médecin et prendre rendez-vous.</p>
+      <p>Utilisez les filtres ci-dessus pour afficher uniquement les médecins d'une spécialité spécifique.</p>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

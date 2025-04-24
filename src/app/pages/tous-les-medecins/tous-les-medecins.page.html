@@ -3,6 +3,28 @@
 <ion-content>
   <ion-searchbar [(ngModel)]="searchQuery" (ionInput)="filterMedecins()" placeholder="Rechercher un médecin..." animated></ion-searchbar>
 
+  <div class="filters-container">
+    <ion-item>
+      <ion-label>Spécialité</ion-label>
+      <ion-select [(ngModel)]="selectedSpecialite" (ionChange)="onSpecialiteChange()" placeholder="Toutes les spécialités">
+        <ion-select-option value="">Toutes les spécialités</ion-select-option>
+        <ion-select-option *ngFor="let specialite of specialites" [value]="specialite">{{ specialite }}</ion-select-option>
+      </ion-select>
+    </ion-item>
+    
+    <ion-button *ngIf="searchQuery || selectedSpecialite" fill="clear" size="small" (click)="clearFilters()">
+      <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+      Effacer les filtres
+    </ion-button>
+  </div>
+
+  <div class="map-button-container">
+    <ion-button expand="block" routerLink="/map-medecins" color="secondary">
+      <ion-icon name="map-outline" slot="start"></ion-icon>
+      Voir les cabinets sur la carte
+    </ion-button>
+  </div>
+
   <ion-list>
     <ion-card *ngFor="let medecin of filteredMedecins" (click)="goToMedecinCalendar(medecin.email)" class="medecin-card">
       <ion-card-content>
@@ -15,7 +37,13 @@
             <p>{{ medecin.specialite }}</p>
             <p class="location">{{ medecin.adresse || 'Adresse non spécifiée' }}</p>
           </ion-label>
-          <ion-button slot="end" color="primary">Réserver</ion-button>
+          <div slot="end" class="button-group">
+            <ion-button color="primary" (click)="goToMedecinCalendar(medecin.email); $event.stopPropagation()">Réserver</ion-button>
+            <ion-button color="secondary" (click)="goToConversation(medecin.email); $event.stopPropagation()">
+              <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
+              Message
+            </ion-button>
+          </div>
         </ion-item>
       </ion-card-content>
     </ion-card>

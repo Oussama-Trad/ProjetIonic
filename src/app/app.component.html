@@ -55,9 +55,14 @@
         </ion-item>
 
         <!-- Options communes connecté -->
-        <ion-item button *ngIf="isLoggedIn" (click)="goToParametres()">
+        <ion-item [routerLink]="['/tabs/parametres']">
           <ion-icon name="settings-outline" slot="start"></ion-icon>
           <ion-label>Paramètres</ion-label>
+        </ion-item>
+        <ion-item [routerLink]="['/tabs/messages']">
+          <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+          <ion-label>Messagerie</ion-label>
+          <ion-badge *ngIf="unreadMessageCount > 0" color="danger">{{ unreadMessageCount }}</ion-badge>
         </ion-item>
         <ion-item button *ngIf="isLoggedIn" (click)="logout()">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>

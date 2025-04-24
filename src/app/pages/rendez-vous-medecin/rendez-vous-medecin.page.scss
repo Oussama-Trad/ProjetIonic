@@ -1,0 +1,289 @@
+ion-content {
+  --background: var(--ion-color-light-shade, #f4f5f8);
+}
+
+ion-segment {
+  margin-bottom: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 4px;
+}
+
+ion-card {
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  
+  ion-card-header {
+    background-color: var(--ion-color-secondary-shade);
+    color: white;
+    
+    ion-card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      
+      ion-icon {
+        margin-right: 8px;
+      }
+      
+      ion-badge {
+        margin-left: 8px;
+      }
+    }
+  }
+}
+
+// Styles pour le calendrier
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  
+  span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  
+  .calendar-day-header {
+    text-align: center;
+    font-weight: bold;
+    padding: 10px 0;
+    color: var(--ion-color-medium);
+  }
+  
+  .calendar-day {
+    position: relative;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &.outside-month {
+      opacity: 0.3;
+    }
+    
+    &.weekend {
+      color: var(--ion-color-medium);
+    }
+    
+    &.today {
+      border: 2px solid var(--ion-color-primary);
+      font-weight: bold;
+    }
+    
+    &.has-appointments {
+      background-color: rgba(var(--ion-color-success-rgb), 0.1);
+      color: var(--ion-color-success-shade);
+      
+      &:hover {
+        background-color: rgba(var(--ion-color-success-rgb), 0.2);
+        transform: scale(1.1);
+      }
+    }
+    
+    .appointment-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background-color: var(--ion-color-primary);
+      color: white;
+      font-size: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+    }
+  }
+}
+
+// Styles pour la liste des rendez-vous
+ion-item {
+  --padding-start: 16px;
+  --padding-end: 8px;
+  --border-radius: 8px;
+  margin-bottom: 8px;
+  --background: #ffffff;
+  
+  h2 {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  h3 {
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: var(--ion-color-medium-shade);
+    
+    ion-icon {
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+  }
+  
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    
+    ion-icon {
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+  }
+  
+  ion-badge {
+    margin-top: 4px;
+  }
+  
+  &.rdv-confirmed {
+    border-left: 4px solid var(--ion-color-success);
+  }
+  
+  &.rdv-pending {
+    border-left: 4px solid var(--ion-color-warning);
+  }
+  
+  ion-buttons {
+    margin-right: 8px;
+  }
+}
+
+ion-avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.loading-item {
+  --background: transparent;
+  --border-color: transparent;
+  
+  ion-spinner {
+    margin-right: 16px;
+  }
+}
+
+.empty-state {
+  --background: transparent;
+  --border-color: transparent;
+  height: 200px;
+  
+  .empty-icon {
+    font-size: 48px;
+    color: var(--ion-color-medium);
+    margin-bottom: 16px;
+  }
+  
+  h2 {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ion-color-dark);
+  }
+  
+  p {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+  }
+}
+
+// Styles pour les filtres de date
+.date-filter-card {
+  ion-item {
+    --padding-start: 0;
+    --background: transparent;
+    --border-color: transparent;
+    
+    ion-label {
+      color: var(--ion-color-medium-shade);
+      font-weight: 500;
+    }
+    
+    ion-input {
+      --padding-start: 0;
+      --padding-end: 0;
+      margin-top: 4px;
+      border-bottom: 1px solid var(--ion-color-light-shade);
+    }
+  }
+}
+
+// Style pour la popup de rendez-vous
+::ng-deep .appointment-alert {
+  --width: 90%;
+  --max-width: 400px;
+  
+  .alert-title {
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+  
+  .alert-message {
+    padding-top: 8px;
+    
+    .appointments-list {
+      margin-top: 8px;
+      
+      .appointment-item {
+        display: grid;
+        grid-template-columns: 60px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+        background-color: var(--ion-color-light);
+        
+        &.confirmed {
+          border-left: 3px solid var(--ion-color-success);
+        }
+        
+        &.pending {
+          border-left: 3px solid var(--ion-color-warning);
+        }
+        
+        .time {
+          font-weight: bold;
+          color: var(--ion-color-dark);
+        }
+        
+        .patient {
+          font-weight: 500;
+        }
+        
+        .status {
+          font-size: 12px;
+          padding: 2px 8px;
+          border-radius: 12px;
+          background-color: var(--ion-color-light-shade);
+          
+          &.confirmed {
+            background-color: var(--ion-color-success);
+            color: white;
+          }
+          
+          &.pending {
+            background-color: var(--ion-color-warning);
+            color: white;
+          }
+        }
+      }
+    }
+  }
+} 

@@ -1,28 +1,38 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { NotificationService } from './services/notification.service';
+import { ChatService } from './services/chat.service';
+import { DbInitService } from './services/db-init.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html',
   styleUrls: ['app.component.scss'],
-  standalone: false, // Changé à false
+  standalone:false
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
   isLoggedIn: boolean = false;
   role: string | null = null;
   showNotifications: boolean = false;
   notifications: any[] = [];
   unreadNotificationsCount: number = 0;
+  isMenuOpen = false;
+  darkMode = false;
+  unreadMessageCount = 0;
 
   @ViewChild('notificationDropdown') notificationDropdown!: ElementRef<HTMLDivElement>;
 
   constructor(
-    private authService: AuthService,
     private router: Router,
-    private notificationService: NotificationService
+    private authService: AuthService,
+    private notificationService: NotificationService,
+    private chatService: ChatService,
+    private dbInitService: DbInitService
   ) {
+    // Initialiser la base de données avec les données de test
+    this.initializeDatabase();
+
     this.authService.isLoggedIn$.subscribe((loggedIn: boolean) => {
       this.isLoggedIn = loggedIn;
       this.role = localStorage.getItem('role');
@@ -52,6 +62,29 @@ export class AppComponent {
     this.notificationService.unreadNotificationsCount$.subscribe((count: number) => {
       this.unreadNotificationsCount = count;
     });
+  }
+
+  // Méthode pour initialiser la base de données
+  private initializeDatabase(): void {
+    this.dbInitService.initializeDatabase().subscribe({
+      next: (response) => {
+        console.log('Base de données initialisée avec succès:', response);
+      },
+      error: (err) => {
+        console.error('Échec de l\'initialisation de la base de données:', err);
+      }
+    });
+  }
+
+  ngOnInit() {
+    // Observer pour les messages non lus
+    this.chatService.unreadMessages$.subscribe(count => {
+      this.unreadMessageCount = count;
+    });
+  }
+
+  ngOnDestroy() {
+    // Nettoyage des abonnements si nécessaire
   }
 
   goToLogin() {

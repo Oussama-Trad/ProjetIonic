@@ -1,21 +1,27 @@
 <ion-tabs>
   <ion-tab-bar slot="bottom" color="primary">
-    <ion-tab-button (click)="goToAccueil()" class="tab-button">
+    <ion-tab-button (click)="goToAccueil()" [class.active-tab]="isActive('accueil')">
       <ion-icon name="home"></ion-icon>
       <ion-label>Accueil</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button (click)="goToMedecins()" class="tab-button">
+    <ion-tab-button (click)="goToMedecins()" [class.active-tab]="isActive('tous-les-medecins')">
       <ion-icon name="medical"></ion-icon>
       <ion-label>Médecins</ion-label>
     </ion-tab-button>
+    
+    <ion-tab-button (click)="goToMessages()" [class.active-tab]="isActive('messages')">
+      <ion-icon name="chatbubbles"></ion-icon>
+      <ion-badge *ngIf="unreadMessageCount > 0">{{ unreadMessageCount }}</ion-badge>
+      <ion-label>Messages</ion-label>
+    </ion-tab-button>
 
-    <ion-tab-button (click)="goToProfile()" class="tab-button">
+    <ion-tab-button (click)="goToProfile()" [class.active-tab]="isActive('home') || isActive('medecin')">
       <ion-icon name="person"></ion-icon>
       <ion-label>Profil</ion-label>
     </ion-tab-button>
 
-    <ion-tab-button (click)="goToParametres()" class="tab-button">
+    <ion-tab-button (click)="goToParametres()" [class.active-tab]="isActive('parametres')">
       <ion-icon name="settings"></ion-icon>
       <ion-label>Paramètres</ion-label>
     </ion-tab-button>

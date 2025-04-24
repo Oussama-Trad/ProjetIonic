@@ -1,0 +1,86 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/messages-list" text=""></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ contactName }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="refreshMessages($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-outline"
+      pullingText="Tirez pour rafraîchir"
+      refreshingSpinner="circles"
+      refreshingText="Chargement...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- État de chargement -->
+  <div *ngIf="isLoading && !messages.length" class="ion-padding ion-text-center">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Chargement des messages...</p>
+  </div>
+
+  <!-- État d'erreur -->
+  <div *ngIf="hasError" class="error-container">
+    <ion-icon name="cloud-offline-outline"></ion-icon>
+    <h2>Impossible de charger les messages</h2>
+    <p>{{ errorMessage }}</p>
+    <ion-button (click)="refreshMessages()" expand="block" fill="outline">
+      Réessayer
+    </ion-button>
+  </div>
+
+  <!-- Messages vides -->
+  <div *ngIf="!isLoading && !hasError && !messages.length" class="empty-state">
+    <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+    <h2>Aucun message</h2>
+    <p>Commencez à écrire pour envoyer un message.</p>
+  </div>
+
+  <!-- Liste des messages -->
+  <div class="messages-container" *ngIf="messages.length">
+    <div *ngFor="let message of messages; let i = index">
+      <!-- Afficher la date si c'est un nouveau jour -->
+      <div *ngIf="shouldShowDate(message, i)" class="message-date">
+        <div class="date-divider">
+          <span>{{ formatMessageDate(message.timestamp) }}</span>
+        </div>
+      </div>
+
+      <div class="message" [ngClass]="{'sent': message.isSent, 'received': !message.isSent}">
+        <div class="message-content">
+          {{ message.content }}
+          <div class="message-time">
+            {{ formatTime(message.timestamp) }}
+            <ion-icon 
+              name="checkmark-done" 
+              *ngIf="message.isSent" 
+              [ngClass]="{'read': message.isRead}">
+            </ion-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="message-input-container">
+      <ion-textarea 
+        placeholder="Écrivez un message..." 
+        [(ngModel)]="newMessage" 
+        rows="1" 
+        autoGrow="true"
+        maxlength="500"
+        (keyup.enter)="sendMessage()">
+      </ion-textarea>
+      <ion-button fill="clear" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+        <ion-icon slot="icon-only" name="send" color="primary"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer> 

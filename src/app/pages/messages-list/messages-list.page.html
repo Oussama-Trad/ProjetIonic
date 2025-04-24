@@ -1,0 +1,81 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Messages</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="startNewConversation()">
+        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refreshConversations($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-outline"
+      pullingText="Tirez pour rafraîchir"
+      refreshingSpinner="circles"
+      refreshingText="Chargement...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- États de chargement et d'erreur -->
+  <div *ngIf="isLoading && !conversations.length" class="ion-padding ion-text-center">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Chargement des conversations...</p>
+  </div>
+
+  <div *ngIf="hasError" class="error-container">
+    <ion-icon name="cloud-offline-outline"></ion-icon>
+    <h2>Impossible de charger vos messages</h2>
+    <p>{{ errorMessage }}</p>
+    <ion-button (click)="refreshConversations()" expand="block" fill="outline">
+      Réessayer
+    </ion-button>
+  </div>
+
+  <!-- Message quand aucune conversation n'existe -->
+  <div *ngIf="!isLoading && !hasError && !conversations.length" class="empty-state">
+    <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+    <h2>Aucune conversation</h2>
+    <p>Commencez une nouvelle conversation pour échanger des messages.</p>
+    <ion-button (click)="startNewConversation()" expand="block">
+      Nouvelle conversation
+    </ion-button>
+  </div>
+
+  <!-- Liste des conversations -->
+  <ion-list *ngIf="!isLoading || conversations.length">
+    <ion-item 
+      *ngFor="let conversation of conversations" 
+      detail="false" 
+      (click)="openConversation(conversation.id)"
+      [class.unread]="conversation.unreadCount > 0">
+      
+      <ion-avatar slot="start">
+        <img [src]="conversation.avatarUrl" alt="Avatar">
+      </ion-avatar>
+      
+      <ion-label>
+        <div class="conversation-header">
+          <h2>{{ conversation.contactName }}</h2>
+          <ion-note>{{ formatTimestamp(conversation.timestamp) }}</ion-note>
+        </div>
+        
+        <div class="message-preview" [class.unread]="conversation.unreadCount > 0">
+          {{ conversation.lastMessage }}
+        </div>
+      </ion-label>
+      
+      <ion-badge *ngIf="conversation.unreadCount > 0" slot="end">
+        {{ conversation.unreadCount }}
+      </ion-badge>
+    </ion-item>
+  </ion-list>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed" *ngIf="!isLoading && !hasError && conversations.length">
+    <ion-fab-button (click)="startNewConversation()">
+      <ion-icon name="chatbubble-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content> 

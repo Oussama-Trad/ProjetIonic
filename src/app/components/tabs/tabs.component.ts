@@ -99,11 +99,8 @@ export class TabsComponent implements OnInit {
   goToProfile() {
     console.log('Navigation vers Profil');
     if (this.isLoggedIn) {
-      if (this.role === 'patient') {
-        this.router.navigate(['/tabs/home']);
-      } else if (this.role === 'medecin') {
-        this.router.navigate(['/medecin']);
-      }
+      // Rediriger vers la page home qui est la vraie page de profil
+      this.router.navigate(['/tabs/home']);
     } else {
       this.showLoginAlert();
       this.router.navigate(['/login']);

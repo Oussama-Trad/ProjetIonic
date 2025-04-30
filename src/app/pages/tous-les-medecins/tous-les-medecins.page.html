@@ -18,13 +18,6 @@
     </ion-button>
   </div>
 
-  <div class="map-button-container">
-    <ion-button expand="block" routerLink="/map-medecins" color="secondary">
-      <ion-icon name="map-outline" slot="start"></ion-icon>
-      Voir les cabinets sur la carte
-    </ion-button>
-  </div>
-
   <ion-list>
     <ion-card *ngFor="let medecin of filteredMedecins" (click)="goToMedecinCalendar(medecin.email)" class="medecin-card">
       <ion-card-content>
@@ -43,6 +36,10 @@
               <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
               Message
             </ion-button>
+            <ion-button color="tertiary" (click)="openDocumentModal(medecin); $event.stopPropagation()">
+              <ion-icon name="document-outline" slot="start"></ion-icon>
+              Document
+            </ion-button>
           </div>
         </ion-item>
       </ion-card-content>
@@ -52,3 +49,52 @@
     </ion-item>
   </ion-list>
 </ion-content>
+
+<!-- Modale d'envoi de document -->
+<ion-modal [isOpen]="isDocumentModalOpen" (didDismiss)="closeDocumentModal()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="tertiary">
+        <ion-title>Envoyer un document</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeDocumentModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <div class="modal-content">
+        <div class="doctor-info" *ngIf="selectedMedecin">
+          <ion-avatar>
+            <img [src]="selectedMedecin.photoProfil || 'assets/default-avatar.png'" alt="Photo du médecin">
+          </ion-avatar>
+          <div class="doctor-details">
+            <h2>Dr. {{ selectedMedecin.prenom }} {{ selectedMedecin.nom }}</h2>
+            <p>{{ selectedMedecin.specialite }}</p>
+          </div>
+        </div>
+
+        <div class="upload-container">
+          <ion-item>
+            <ion-label position="floating">Nom du document</ion-label>
+            <ion-input [(ngModel)]="documentName" placeholder="Ex: Résultats d'analyses"></ion-input>
+          </ion-item>
+
+          <div class="file-upload-box" (click)="fileInput.click()" [class.has-file]="selectedFile">
+            <input #fileInput type="file" (change)="onFileSelected($event)" accept=".pdf,.jpg,.png,.doc,.docx" hidden />
+            <ion-icon name="cloud-upload-outline" *ngIf="!selectedFile"></ion-icon>
+            <ion-icon name="document-outline" *ngIf="selectedFile"></ion-icon>
+            <p *ngIf="!selectedFile">Cliquez pour sélectionner un fichier</p>
+            <p *ngIf="selectedFile">{{ selectedFile.name }}</p>
+          </div>
+
+          <ion-button expand="block" color="tertiary" (click)="uploadDocument()" [disabled]="!selectedFile || !documentName">
+            <ion-icon name="paper-plane-outline" slot="start"></ion-icon>
+            Envoyer le document
+          </ion-button>
+        </div>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

@@ -1,7 +1,14 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LoadingController, ToastController, AlertController } from '@ionic/angular';
+
+// Définir les types pour Google Maps
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 @Component({
   selector: 'app-rendez-vous',
@@ -9,7 +16,10 @@ import { LoadingController, ToastController, AlertController } from '@ionic/angu
   styleUrls: ['./rendez-vous.page.scss'],
   standalone: false,
 })
-export class RendezVousPage implements OnInit {
+export class RendezVousPage implements OnInit, AfterViewInit {
+  @ViewChild('map', { static: false }) mapElement!: ElementRef;
+  map: any;
+  
   medecin: any = {};
   currentMonth: Date = new Date();
   calendarDays: { 
@@ -25,6 +35,7 @@ export class RendezVousPage implements OnInit {
   documentUrl: string | null = null;
   isLoading: boolean = false;
   isPatient: boolean = false;
+  mapInitialized: boolean = false;
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -51,6 +62,10 @@ export class RendezVousPage implements OnInit {
     }
     
     this.checkAuth();
+  }
+
+  ngAfterViewInit() {
+    // La carte sera initialisée une fois que les données du médecin seront chargées
   }
 
   async showLoading(message: string) {
@@ -104,20 +119,20 @@ export class RendezVousPage implements OnInit {
 
   async loadMedecinData(medecinEmail: string) {
     try {
-      const response: any = await this.authService.getMedecin(medecinEmail).toPromise();
+      const response = await this.authService.getMedecin(medecinEmail).toPromise();
       this.medecin = response;
       console.log('Données médecin chargées :', this.medecin);
       this.loadCalendar();
+      
+      // Attendre que le DOM soit prêt avant d'initialiser la carte
+      setTimeout(() => {
+        this.initMap();
+      }, 1000);
     } catch (err: any) {
       console.error('Erreur chargement médecin :', err);
       this.hideLoading();
-      this.showToast('Impossible de charger les informations du médecin', 'danger');
-      
-      if (err.status === 401) {
-        this.router.navigate(['/login']);
-      } else {
-        this.router.navigate(['/tabs/tous-les-medecins']);
-      }
+      this.showToast('Erreur lors du chargement des données du médecin', 'danger');
+      this.router.navigate(['/tabs/accueil']);
     }
   }
 
@@ -432,6 +447,7 @@ export class RendezVousPage implements OnInit {
       motif: 'Consultation générale',
     };
 
+    // Document est maintenant vraiment optionnel
     if (this.documentUrl && this.documentName) {
       rdvData.document = { nom: this.documentName, url: this.documentUrl };
     }
@@ -457,6 +473,8 @@ export class RendezVousPage implements OnInit {
                 this.fileInput.nativeElement.value = '';
               }
               this.loadDisponibilites(this.medecin.email);
+              // Rediriger vers l'accueil après confirmation
+              this.goToAccueil();
             }
           }
         ]
@@ -493,6 +511,85 @@ export class RendezVousPage implements OnInit {
     this.router.navigate(['/conversation'], { 
       queryParams: { 
         otherUser: this.medecin.email
+      }
+    });
+  }
+
+  initMap() {
+    if (!this.mapElement || this.mapInitialized || !this.medecin.adresse) return;
+    
+    setTimeout(() => {
+      try {
+        this.mapInitialized = true;
+        
+        // Options de la carte
+        const mapOptions = {
+          center: { lat: 48.8566, lng: 2.3522 }, // Paris par défaut
+          zoom: 15,
+          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+          disableDefaultUI: true,
+          zoomControl: true,
+          mapTypeControl: false,
+          scaleControl: true,
+          streetViewControl: false,
+          rotateControl: false,
+          fullscreenControl: true
+        };
+        
+        // Créer la carte
+        this.map = new window.google.maps.Map(this.mapElement.nativeElement, mapOptions);
+        
+        // Géocoder l'adresse du médecin
+        this.geocodeAddress(this.medecin.adresse);
+      } catch (error) {
+        console.error('Erreur lors de l\'initialisation de la carte:', error);
+      }
+    }, 500); // Délai pour s'assurer que l'élément DOM est prêt
+  }
+
+  geocodeAddress(address: string) {
+    if (!address) return;
+    
+    const geocoder = new window.google.maps.Geocoder();
+    
+    geocoder.geocode({ 'address': address }, (results: any, status: string) => {
+      if (status === 'OK' && results && results.length > 0) {
+        const position = results[0].geometry.location;
+        
+        // Centrer la carte sur l'adresse
+        this.map.setCenter(position);
+        
+        // Ajouter un marqueur
+        const marker = new window.google.maps.Marker({
+          position: position,
+          map: this.map,
+          title: `Dr. ${this.medecin.firstName} ${this.medecin.lastName}`,
+          animation: window.google.maps.Animation.DROP
+        });
+        
+        // Ajouter une fenêtre d'info
+        const infoContent = `
+          <div class="info-window">
+            <h3>Dr. ${this.medecin.firstName} ${this.medecin.lastName}</h3>
+            <p><strong>Spécialité:</strong> ${this.medecin.specialite}</p>
+            <p><strong>Adresse:</strong> ${this.medecin.adresse}</p>
+            <p><strong>Téléphone:</strong> ${this.medecin.telephone || 'Non disponible'}</p>
+          </div>
+        `;
+        
+        const infoWindow = new window.google.maps.InfoWindow({
+          content: infoContent
+        });
+        
+        // Ouvrir la fenêtre d'info par défaut
+        infoWindow.open(this.map, marker);
+        
+        // Ajouter un écouteur d'événements pour ouvrir la fenêtre d'info au clic
+        marker.addListener('click', () => {
+          infoWindow.open(this.map, marker);
+        });
+      } else {
+        console.error('Erreur de géocodage pour:', address, status);
       }
     });
   }

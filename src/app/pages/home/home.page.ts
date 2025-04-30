@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
+import { AlertController, ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-home',
@@ -14,8 +15,14 @@ export class HomePage implements OnInit {
   user: any = {};
   isEditing: boolean = false;
   photoPreview: string | null = null;
+  documents: any[] = [];
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(
+    private authService: AuthService, 
+    private router: Router,
+    private alertController: AlertController,
+    private toastController: ToastController
+  ) {}
 
   ngOnInit() {
     this.authService.isLoggedIn$.subscribe((loggedIn) => {
@@ -24,17 +31,28 @@ export class HomePage implements OnInit {
       if (loggedIn && this.role === 'patient') {
         const email = localStorage.getItem('email');
         if (email) {
-          this.authService.getUser(email).subscribe({
-            next: (response) => {
-              this.user = response;
-              console.log('Données utilisateur chargées :', this.user);
-            },
-            error: (err) => console.error('Erreur chargement profil :', err),
-          });
+          this.loadUserProfile(email);
         }
       } else if (this.role === 'medecin') {
-        this.router.navigate(['/medecin']);
+        this.router.navigate(['/tabs-medecin/accueil-medecin']);
       }
+    });
+  }
+
+  loadUserProfile(email: string) {
+    this.authService.getUser(email).subscribe({
+      next: (response) => {
+        this.user = response;
+        console.log('Données utilisateur chargées :', this.user);
+        
+        // Charger les documents de l'utilisateur
+        this.documents = this.user.documents || [];
+        console.log('Documents chargés:', this.documents);
+      },
+      error: (err) => {
+        console.error('Erreur chargement profil :', err);
+        this.showToast('Impossible de charger votre profil', 'danger');
+      },
     });
   }
 
@@ -84,13 +102,38 @@ export class HomePage implements OnInit {
         next: (response) => {
           this.user = response;
           this.isEditing = false;
-          alert('Profil mis à jour avec succès !');
+          this.showToast('Profil mis à jour avec succès !', 'success');
         },
         error: (err) => {
           console.error('Erreur mise à jour profil :', err);
-          alert('Erreur : ' + (err.error?.msg || 'Échec'));
+          this.showToast('Erreur : ' + (err.error?.msg || 'Échec de la mise à jour'), 'danger');
         },
       });
+  }
+
+  async viewDocument(doc: any) {
+    // Afficher le document dans une alerte
+    const alert = await this.alertController.create({
+      header: doc.nom,
+      message: `<div class="document-preview">
+                  <p><strong>Statut:</strong> ${doc.statut}</p>
+                  <p><strong>Date:</strong> ${new Date(doc.date).toLocaleDateString()}</p>
+                  ${doc.annotations ? `<p><strong>Annotations:</strong> ${doc.annotations}</p>` : ''}
+                </div>`,
+      buttons: ['Fermer']
+    });
+    await alert.present();
+  }
+
+  async showToast(message: string, color: string = 'primary') {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      position: 'bottom',
+      color,
+      buttons: [{ text: 'OK', role: 'cancel' }]
+    });
+    await toast.present();
   }
 
   goToLogin() {

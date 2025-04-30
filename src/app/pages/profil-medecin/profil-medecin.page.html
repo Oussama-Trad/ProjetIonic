@@ -1,18 +1,19 @@
 <app-header></app-header>
 
 <ion-content class="ion-padding">
-  <ion-card *ngIf="isLoggedIn && role === 'patient'">
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
-      <ion-card-title>Mon Profil</ion-card-title>
+      <ion-card-title>Mon Profil Médecin</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-item *ngIf="!isEditing">
         <ion-avatar slot="start">
-          <img [src]="user.photoProfil || user.profilePicture || 'assets/default-avatar.png'" alt="Photo de profil">
+          <img [src]="medecin.photoProfil || medecin.profilePicture || 'assets/default-doctor.png'" alt="Photo de profil">
         </ion-avatar>
         <ion-label>
-          <h2>{{ user.firstName }} {{ user.lastName }}</h2>
-          <p>{{ user.email }}</p>
+          <h2>Dr. {{ medecin.firstName }} {{ medecin.lastName }}</h2>
+          <p>{{ medecin.email }}</p>
+          <p>{{ medecin.specialite }}</p>
         </ion-label>
         <ion-button slot="end" (click)="toggleEdit()">Modifier</ion-button>
       </ion-item>
@@ -20,40 +21,40 @@
       <form *ngIf="isEditing" (ngSubmit)="saveProfile()">
         <ion-item>
           <ion-label position="floating">Prénom</ion-label>
-          <ion-input [(ngModel)]="user.firstName" name="firstName" required></ion-input>
+          <ion-input [(ngModel)]="medecin.firstName" name="firstName" required></ion-input>
         </ion-item>
         <ion-item>
           <ion-label position="floating">Nom</ion-label>
-          <ion-input [(ngModel)]="user.lastName" name="lastName" required></ion-input>
+          <ion-input [(ngModel)]="medecin.lastName" name="lastName" required></ion-input>
         </ion-item>
         <ion-item>
           <ion-label position="floating">Numéro de téléphone</ion-label>
-          <ion-input [(ngModel)]="user.phoneNumber" name="phoneNumber" type="tel"></ion-input>
+          <ion-input [(ngModel)]="medecin.phoneNumber" name="phoneNumber" type="tel"></ion-input>
         </ion-item>
         <ion-item>
           <ion-label position="floating">Email</ion-label>
-          <ion-input [(ngModel)]="user.email" name="email" type="email" required disabled></ion-input>
+          <ion-input [(ngModel)]="medecin.email" name="email" type="email" required disabled></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="floating">Date de naissance</ion-label>
-          <ion-input [(ngModel)]="user.birthDate" name="birthDate" type="date"></ion-input>
+          <ion-label position="floating">Spécialité</ion-label>
+          <ion-input [(ngModel)]="medecin.specialite" name="specialite"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="floating">Adresse</ion-label>
-          <ion-input [(ngModel)]="user.address" name="address"></ion-input>
+          <ion-label position="floating">Adresse du cabinet</ion-label>
+          <ion-input [(ngModel)]="medecin.address" name="address"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label>Genre</ion-label>
-          <ion-select [(ngModel)]="user.gender" name="gender">
-            <ion-select-option value="Homme">Homme</ion-select-option>
-            <ion-select-option value="Femme">Femme</ion-select-option>
-            <ion-select-option value="Autre">Autre</ion-select-option>
-          </ion-select>
+          <ion-label position="floating">Tarif consultation</ion-label>
+          <ion-input [(ngModel)]="medecin.tarif" name="tarif" type="number"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="floating">Description</ion-label>
+          <ion-textarea [(ngModel)]="medecin.description" name="description" rows="3"></ion-textarea>
         </ion-item>
         <ion-item>
           <ion-label>Photo de profil</ion-label>
           <input type="file" (change)="onFileChange($event)" accept="image/*">
-          <img [src]="photoPreview || user.photoProfil || user.profilePicture || 'assets/default-avatar.png'" alt="Aperçu" style="max-width: 100px;">
+          <img [src]="photoPreview || medecin.photoProfil || medecin.profilePicture || 'assets/default-doctor.png'" alt="Aperçu" style="max-width: 100px;">
         </ion-item>
         <ion-button type="submit" expand="block">Enregistrer</ion-button>
         <ion-button color="light" expand="block" (click)="toggleEdit()">Annuler</ion-button>
@@ -61,38 +62,39 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Section Mes Documents pour les patients -->
-  <ion-card *ngIf="isLoggedIn && role === 'patient'">
+  <!-- Section Documents Patients -->
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
     <ion-card-header>
       <ion-card-title>
         <ion-icon name="document-text-outline"></ion-icon>
-        Mes Documents
+        Documents Patients
       </ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <div *ngIf="documents.length === 0" class="empty-state">
+      <div *ngIf="patientDocuments.length === 0" class="empty-state">
         <ion-icon name="document-outline" class="empty-icon"></ion-icon>
-        <p>Vous n'avez pas encore envoyé de documents</p>
+        <p>Aucun document patient à consulter</p>
       </div>
       
-      <ion-list *ngIf="documents.length > 0">
-        <ion-item *ngFor="let doc of documents" class="document-item">
+      <ion-list *ngIf="patientDocuments.length > 0">
+        <ion-item *ngFor="let doc of patientDocuments" class="document-item">
           <ion-icon name="document-text-outline" slot="start" class="document-icon"></ion-icon>
           <ion-label>
             <h2>{{ doc.nom }}</h2>
             <p class="document-info">
-              <span class="document-date">Envoyé le {{ doc.date | date:'dd/MM/yyyy' }}</span>
+              <span class="document-date">Reçu le {{ doc.date | date:'dd/MM/yyyy' }}</span>
+              <span class="document-patient">Patient: {{ doc.patientName }}</span>
               <span class="document-status" [ngClass]="doc.statut">
                 <ion-icon name="ellipse" class="status-icon"></ion-icon>
                 {{ doc.statut }}
               </span>
             </p>
-            <p *ngIf="doc.annotations" class="document-annotations">
-              <strong>Annotations du médecin:</strong> {{ doc.annotations }}
-            </p>
           </ion-label>
           <ion-button fill="clear" slot="end" (click)="viewDocument(doc)">
             <ion-icon name="eye-outline"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" slot="end" (click)="annotateDocument(doc)">
+            <ion-icon name="create-outline"></ion-icon>
           </ion-button>
         </ion-item>
       </ion-list>
@@ -108,6 +110,4 @@
       <ion-button expand="block" (click)="goToLogin()">Se connecter</ion-button>
     </ion-card-content>
   </ion-card>
-
-  
 </ion-content>

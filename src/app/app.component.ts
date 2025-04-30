@@ -99,8 +99,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.navigate(['/tabs/accueil']);
   }
 
-  goToProfile() {
-    this.router.navigate(['/profile']);
+  goToAccueilMedecin() {
+    this.router.navigate(['/tabs-medecin/accueil-medecin']);
+  }
+
+  goToDisponibilitesMedecin() {
+    this.router.navigate(['/tabs-medecin/disponibilites-medecin']);
+  }
+
+  goToStatsMedecin() {
+    this.router.navigate(['/tabs-medecin/stats-medecin']);
   }
 
   goToRendezVous() {
@@ -115,16 +123,20 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.navigate(['/historique']);
   }
 
-  goToAccueilMedecin() {
-    this.router.navigate(['/accueil-medecin']);
-  }
-
-  goToMedecinProfile() {
-    this.router.navigate(['/medecin-profile']);
-  }
-
   goToParametres() {
-    this.router.navigate(['/tabs/parametres']);
+    if (this.role === 'patient') {
+      this.router.navigate(['/tabs/parametres']);
+    } else if (this.role === 'medecin') {
+      this.router.navigate(['/tabs-medecin/parametres']);
+    }
+  }
+
+  goToMessages() {
+    if (this.role === 'patient') {
+      this.router.navigate(['/tabs/messages-list']);
+    } else if (this.role === 'medecin') {
+      this.router.navigate(['/tabs-medecin/messages-list']);
+    }
   }
 
   logout() {

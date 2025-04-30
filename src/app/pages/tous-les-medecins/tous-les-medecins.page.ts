@@ -1,110 +1,92 @@
-import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { IonicModule } from '@ionic/angular';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { LoadingController } from '@ionic/angular';
+import { AuthService } from '../../services/auth.service';
+import { ToastController, AlertController, LoadingController } from '@ionic/angular';
 
 @Component({
   selector: 'app-tous-les-medecins',
   templateUrl: './tous-les-medecins.page.html',
   styleUrls: ['./tous-les-medecins.page.scss'],
   standalone: false,
-
 })
 export class TousLesMedecinsPage implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  
   medecins: any[] = [];
   filteredMedecins: any[] = [];
-  searchQuery: string = '';
   specialites: string[] = [];
+  searchQuery: string = '';
   selectedSpecialite: string = '';
+  isLoading: boolean = false;
+  
+  // Variables pour la modale d'envoi de document
+  isDocumentModalOpen: boolean = false;
+  selectedMedecin: any = null;
+  selectedFile: File | null = null;
+  documentName: string = '';
 
   constructor(
-    private authService: AuthService,
     private router: Router,
+    private authService: AuthService,
+    private toastController: ToastController,
+    private alertController: AlertController,
     private loadingController: LoadingController
   ) {}
 
-  async ngOnInit() {
-    const loading = await this.loadingController.create({
-      message: 'Chargement des médecins...',
-      spinner: 'crescent'
-    });
-    await loading.present();
-    
-    // Charger les spécialités
-    this.loadSpecialites();
-    
-    // Charger les médecins
+  ngOnInit() {
     this.loadMedecins();
-    
-    loading.dismiss();
-  }
-
-  loadSpecialites() {
-    this.authService.getAllSpecialites().subscribe({
-      next: (response) => {
-        this.specialites = response || [];
-        console.log('Spécialités chargées :', this.specialites);
-      },
-      error: (err) => console.error('Erreur chargement spécialités :', err),
-    });
   }
 
   loadMedecins() {
-    this.authService.getAllMedecins(this.searchQuery, this.selectedSpecialite).subscribe({
+    this.isLoading = true;
+    this.authService.getAllMedecins().subscribe({
       next: (response) => {
         this.medecins = response || [];
         this.filteredMedecins = [...this.medecins];
-        console.log('Tous les médecins chargés :', this.medecins);
-        
-        // Si aucun médecin n'est affiché, vérifier s'il y en a dans la collection
-        if (this.medecins.length === 0) {
-          console.warn('Aucun médecin chargé depuis l\'API');
-          // Ajout d'un médecin de test si nécessaire (à retirer en production)
-          if (true) {
-            const testDoctor = {
-              _id: '67d49a1634378e1594084135',
-              id: '67d49a1634378e1594084131',
-              prenom: 'Marie',
-              nom: 'Martin',
-              email: 'dr.martin@example.com',
-              specialite: 'Généraliste',
-              age: 45,
-              dateDeNaissance: '1978-08-22T00:00:00.000+00:00',
-              adresse: '456 Avenue Santé, Lyon',
-              genre: 'Femme',
-              numeroTelephone: '0987654321',
-              photoProfil: 'assets/default-avatar.png'
-            };
-            this.medecins = [testDoctor];
-            this.filteredMedecins = [testDoctor];
-          }
-        }
+        this.extractSpecialites();
+        this.isLoading = false;
       },
-      error: (err) => console.error('Erreur chargement médecins :', err),
+      error: (err) => {
+        console.error('Erreur chargement médecins:', err);
+        this.isLoading = false;
+        this.showToast('Impossible de charger la liste des médecins', 'danger');
+      }
     });
   }
 
+  extractSpecialites() {
+    const specialitesSet = new Set<string>();
+    this.medecins.forEach(medecin => {
+      if (medecin.specialite) {
+        specialitesSet.add(medecin.specialite);
+      }
+    });
+    this.specialites = Array.from(specialitesSet).sort();
+  }
+
   filterMedecins() {
-    // Appliquer le filtre de recherche textuelle
-    if (this.searchQuery || this.selectedSpecialite) {
-      this.loadMedecins(); // Recharger les médecins avec les nouveaux filtres
-    } else {
-      this.filteredMedecins = this.medecins;
-    }
+    this.filteredMedecins = this.medecins.filter(medecin => {
+      const matchesSearch = !this.searchQuery || 
+        medecin.nom?.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+        medecin.prenom?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        medecin.specialite?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+        medecin.adresse?.toLowerCase().includes(this.searchQuery.toLowerCase());
+      
+      const matchesSpecialite = !this.selectedSpecialite || 
+        medecin.specialite === this.selectedSpecialite;
+      
+      return matchesSearch && matchesSpecialite;
+    });
   }
 
   onSpecialiteChange() {
-    console.log('Spécialité sélectionnée :', this.selectedSpecialite);
-    this.loadMedecins(); // Recharger les médecins avec la nouvelle spécialité
+    this.filterMedecins();
   }
 
   clearFilters() {
     this.searchQuery = '';
     this.selectedSpecialite = '';
-    this.loadMedecins();
+    this.filteredMedecins = [...this.medecins];
   }
 
   goToMedecinCalendar(medecinEmail: string) {
@@ -112,10 +94,83 @@ export class TousLesMedecinsPage implements OnInit {
   }
 
   goToConversation(medecinEmail: string) {
-    this.router.navigate(['/conversation'], { 
-      queryParams: { 
-        otherUser: medecinEmail
-      }
+    this.router.navigate(['/conversation'], { queryParams: { otherUser: medecinEmail } });
+  }
+
+  // Méthodes pour la modale d'envoi de document
+  openDocumentModal(medecin: any) {
+    console.log('Ouverture de la modale pour le médecin:', medecin);
+    this.selectedMedecin = medecin;
+    this.documentName = '';
+    this.selectedFile = null;
+    this.isDocumentModalOpen = true;
+  }
+
+  closeDocumentModal() {
+    console.log('Fermeture de la modale');
+    this.isDocumentModalOpen = false;
+    this.selectedMedecin = null;
+    this.documentName = '';
+    this.selectedFile = null;
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.selectedFile = input.files[0];
+      console.log('Fichier sélectionné:', this.selectedFile.name);
+    }
+  }
+
+  async uploadDocument() {
+    if (!this.selectedFile || !this.documentName || !this.selectedMedecin) {
+      this.showToast('Veuillez remplir tous les champs', 'warning');
+      return;
+    }
+
+    const loading = await this.loadingController.create({
+      message: 'Envoi du document en cours...',
+      spinner: 'circles'
     });
+    await loading.present();
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result as string;
+      this.authService.uploadDocument(this.documentName, url, this.selectedMedecin.email).subscribe({
+        next: async (response) => {
+          console.log('Réponse du serveur:', response);
+          loading.dismiss();
+          this.showToast('Document envoyé avec succès', 'success');
+          this.closeDocumentModal();
+          
+          // Afficher une confirmation élégante
+          const alert = await this.alertController.create({
+            header: 'Document envoyé !',
+            message: `Votre document "${this.documentName}" a été envoyé avec succès au Dr. ${this.selectedMedecin.prenom} ${this.selectedMedecin.nom}.`,
+            buttons: ['OK'],
+            cssClass: 'success-alert'
+          });
+          await alert.present();
+        },
+        error: (err) => {
+          console.error('Erreur lors de l\'envoi du document:', err);
+          loading.dismiss();
+          this.showToast('Erreur lors de l\'envoi du document : ' + (err.error?.msg || 'Échec de l\'envoi'), 'danger');
+        }
+      });
+    };
+    reader.readAsDataURL(this.selectedFile);
+  }
+
+  async showToast(message: string, color: string = 'primary') {
+    const toast = await this.toastController.create({
+      message: message,
+      duration: 3000,
+      position: 'bottom',
+      color: color,
+      buttons: [{ text: 'OK', role: 'cancel' }]
+    });
+    await toast.present();
   }
 }

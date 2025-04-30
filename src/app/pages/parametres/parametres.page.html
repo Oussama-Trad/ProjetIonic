@@ -25,4 +25,81 @@
       <ion-label>Veuillez vous connecter pour modifier les paramètres</ion-label>
     </ion-item>
   </ion-list>
+
+  <!-- Section Mes Documents pour les patients -->
+  <ion-card *ngIf="isLoggedIn && role === 'patient'">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="document-text-outline"></ion-icon>
+        Mes Documents
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div *ngIf="documents.length === 0" class="empty-state">
+        <ion-icon name="document-outline" class="empty-icon"></ion-icon>
+        <p>Vous n'avez pas encore envoyé de documents</p>
+      </div>
+      
+      <ion-list *ngIf="documents.length > 0">
+        <ion-item *ngFor="let doc of documents" class="document-item">
+          <ion-icon name="document-text-outline" slot="start" class="document-icon"></ion-icon>
+          <ion-label>
+            <h2>{{ doc.nom }}</h2>
+            <p class="document-info">
+              <span class="document-date">Envoyé le {{ doc.date | date:'dd/MM/yyyy' }}</span>
+              <span class="document-status" [ngClass]="doc.statut">
+                <ion-icon name="ellipse" class="status-icon"></ion-icon>
+                {{ doc.statut }}
+              </span>
+            </p>
+            <p *ngIf="doc.annotations" class="document-annotations">
+              <strong>Annotations du médecin:</strong> {{ doc.annotations }}
+            </p>
+          </ion-label>
+          <ion-button fill="clear" slot="end" (click)="viewDocument(doc)">
+            <ion-icon name="eye-outline"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Section Documents Patients pour les médecins -->
+  <ion-card *ngIf="isLoggedIn && role === 'medecin'">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="document-text-outline"></ion-icon>
+        Documents Patients
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div *ngIf="patientDocuments.length === 0" class="empty-state">
+        <ion-icon name="document-outline" class="empty-icon"></ion-icon>
+        <p>Aucun document patient à consulter</p>
+      </div>
+      
+      <ion-list *ngIf="patientDocuments.length > 0">
+        <ion-item *ngFor="let doc of patientDocuments" class="document-item">
+          <ion-icon name="document-text-outline" slot="start" class="document-icon"></ion-icon>
+          <ion-label>
+            <h2>{{ doc.nom }}</h2>
+            <p class="document-info">
+              <span class="document-patient">Patient: {{ doc.patientName }}</span>
+              <span class="document-date">Reçu le {{ doc.date | date:'dd/MM/yyyy' }}</span>
+              <span class="document-status" [ngClass]="doc.statut">
+                <ion-icon name="ellipse" class="status-icon"></ion-icon>
+                {{ doc.statut }}
+              </span>
+            </p>
+          </ion-label>
+          <ion-button fill="clear" slot="end" (click)="viewDocument(doc)">
+            <ion-icon name="eye-outline"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" slot="end" (click)="annotateDocument(doc)">
+            <ion-icon name="create-outline"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 </ion-content>

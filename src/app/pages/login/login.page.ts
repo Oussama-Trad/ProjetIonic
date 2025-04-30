@@ -22,11 +22,7 @@ export class LoginPage implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.route.queryParams.subscribe((params) => {
-      if (params['access_token']) {
-        this.authService.handleOAuthCallback(params);
-      }
-    });
+    // Suppression de la gestion des callbacks OAuth
   }
 
   async login() {
@@ -37,7 +33,7 @@ export class LoginPage implements OnInit {
         if (role === 'patient') {
           this.router.navigate(['/tabs/accueil']);
         } else if (role === 'medecin') {
-          this.router.navigate(['/accueil-medecin']);
+          this.router.navigate(['/tabs-medecin/accueil-medecin']);
         }
       },
       error: async (err) => {
@@ -51,14 +47,6 @@ export class LoginPage implements OnInit {
         await alert.present();
       },
     });
-  }
-
-  loginWithGoogle() {
-    this.authService.loginWithGoogle();
-  }
-
-  loginWithFacebook() {
-    this.authService.loginWithFacebook();
   }
 
   goToRegister() {

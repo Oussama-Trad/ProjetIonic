@@ -71,37 +71,48 @@ export class TabsMedecinComponent implements OnInit {
     return this.currentPath.includes(`/${route}`) || this.currentPath.endsWith(route);
   }
 
-  goToTableauBord() {
+  goToAccueilMedecin() {
     console.log('Navigation vers Tableau de bord médecin');
-    this.router.navigate(['/accueil-medecin']);
+    this.router.navigate(['/tabs-medecin/accueil-medecin']);
   }
 
-  goToRendezVous() {
-    console.log('Navigation vers Rendez-vous médecin');
-    this.router.navigate(['/rendez-vous-medecin']);
-  }
-  
-  goToPatients() {
-    console.log('Navigation vers Patients');
-    this.router.navigate(['/patients-medecin']);
+  goToDisponibilites() {
+    console.log('Navigation vers Disponibilités médecin');
+    this.router.navigate(['/tabs-medecin/disponibilites-medecin']);
   }
   
   goToMessages() {
     console.log('Navigation vers Messages');
     if (this.isLoggedIn) {
-      this.router.navigate(['/tabs/messages-list']);
+      this.router.navigate(['/tabs-medecin/messages-list']);
     } else {
       this.showLoginAlert();
       this.router.navigate(['/login']);
     }
   }
 
+  goToStats() {
+    console.log('Navigation vers Statistiques médecin');
+    this.router.navigate(['/tabs-medecin/stats-medecin']);
+  }
+
   goToProfile() {
     console.log('Navigation vers Profil médecin');
-    this.router.navigate(['/medecin-profile']);
+    if (this.isLoggedIn) {
+      this.router.navigate(['/tabs-medecin/profil-medecin']);
+    } else {
+      this.showLoginAlert();
+      this.router.navigate(['/login']);
+    }
   }
-  
+
+  goToParametres() {
+    console.log('Navigation vers Paramètres médecin');
+    this.router.navigate(['/tabs-medecin/parametres']);
+  }
+
   showLoginAlert() {
-    alert('Veuillez vous connecter pour accéder à cette fonctionnalité');
+    console.log('Vous devez être connecté pour accéder à cette fonctionnalité');
+    // Ici, vous pourriez ajouter une alerte ou un toast
   }
 } 

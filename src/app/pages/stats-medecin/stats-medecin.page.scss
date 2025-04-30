@@ -1,0 +1,137 @@
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  
+  ion-spinner {
+    margin-bottom: 16px;
+  }
+}
+
+.stat-box {
+  text-align: center;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  margin-bottom: 10px;
+  
+  &.confirmed {
+    background-color: rgba(76, 175, 80, 0.2);
+    border-left: 4px solid #4CAF50;
+  }
+  
+  &.waiting {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-left: 4px solid #FFC107;
+  }
+  
+  &.canceled {
+    background-color: rgba(244, 67, 54, 0.2);
+    border-left: 4px solid #F44336;
+  }
+  
+  &.completed {
+    background-color: rgba(33, 150, 243, 0.2);
+    border-left: 4px solid #2196F3;
+  }
+  
+  .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: #666;
+    margin-top: 4px;
+  }
+}
+
+.month-box {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  
+  .month-name {
+    font-size: 12px;
+    color: #666;
+  }
+  
+  .month-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+  }
+}
+
+.attendance-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  .attendance-rate {
+    text-align: center;
+    margin-bottom: 20px;
+    
+    .rate-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #3880ff;
+    }
+    
+    .rate-label {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+  
+  .attendance-details {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    
+    .detail-item {
+      text-align: center;
+      
+      .detail-value {
+        font-size: 20px;
+        font-weight: bold;
+      }
+      
+      .detail-label {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+  }
+}
+
+.time-container {
+  text-align: center;
+  
+  .time-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #3880ff;
+  }
+  
+  .time-label {
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.chart-container {
+  height: 200px;
+  margin-bottom: 20px;
+}
+
+canvas {
+  width: 100% !important;
+  height: 250px !important;
+  margin: 16px 0;
+}

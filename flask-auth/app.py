@@ -613,6 +613,12 @@ def manage_rendezvous(action):
                 f"Votre rendez-vous le {date} à {heure} est confirmé",
                 {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
             )
+            send_fcm_notification(
+                medecin.get('fcmToken'), 
+                "Rendez-vous accepté", 
+                f"Le rendez-vous de {user['firstName']} {user['lastName']} le {date} à {heure} a été accepté",
+                {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
+            )
             print(f"Rendez-vous accepté: {user_email}, {date}, {heure}")
             return jsonify({'msg': 'Rendez-vous accepté'}), 200
         elif action == 'refuse':
@@ -642,6 +648,12 @@ def manage_rendezvous(action):
                 "Rendez-vous refusé", 
                 f"Votre rendez-vous le {date} à {heure} a été refusé",
                 {'rdvDate': date, 'rdvHeure': heure, 'medecinEmail': email}
+            )
+            send_fcm_notification(
+                medecin.get('fcmToken'), 
+                "Rendez-vous refusé", 
+                f"Le rendez-vous de {user['firstName']} {user['lastName']} le {date} à {heure} a été refusé",
+                {'rdvDate': date, 'rdvHeure': heure, 'userEmail': user_email}
             )
             print(f"Rendez-vous refusé: {user_email}, {date}, {heure}")
             return jsonify({'msg': 'Rendez-vous refusé'}), 200
@@ -742,44 +754,65 @@ def cancel_rendezvous():
 # Téléverser un document
 @app.route('/api/user/document', methods=['POST'])
 @jwt_required()
-def upload_document():
+def upload_patient_document():
     email = get_jwt_identity()
     data = request.get_json()
     nom = data.get('nom')
-    url = data.get('url')
+    contenu = data.get('contenu')
     medecin_email = data.get('medecinEmail')
 
-    if not all([nom, url, medecin_email]):
+    if not all([nom, contenu, medecin_email]):
         print(f"Données manquantes: {data}")
         return jsonify({'msg': 'Veuillez fournir toutes les informations requises'}), 400
 
-    document = {'nom': nom, 'url': url, 'medecinEmail': medecin_email, 'timestamp': datetime.utcnow().isoformat()}
-    conn = sqlite3.connect('documents.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO documents (user_email, nom, url, medecin_email, timestamp) VALUES (?, ?, ?, ?, ?)",
-              (email, nom, url, medecin_email, document['timestamp']))
-    conn.commit()
-    conn.close()
+    # Récupérer l'utilisateur
+    user = users_collection.find_one({'email': email})
+    if not user:
+        return jsonify({'msg': 'Utilisateur non trouvé'}), 404
 
-    users_collection.update_one({'email': email}, {'$push': {'documents': document}})
+    # Récupérer le médecin
     medecin = medecins_collection.find_one({'email': medecin_email})
+    if not medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+
+    # Créer le document
+    document = {
+        'id': str(ObjectId()),
+        'nom': nom, 
+        'contenu': contenu, 
+        'medecinEmail': medecin_email, 
+        'date': datetime.utcnow().isoformat(),
+        'statut': 'non consulté',
+        'annotations': ''
+    }
+
+    # Ajouter le document à la liste des documents de l'utilisateur
+    users_collection.update_one({'email': email}, {'$push': {'documents': document}})
+    
+    # Créer une notification pour le médecin
     notif = {
         'id': str(ObjectId()),
-        'message': f"{email} vous a envoyé le document '{nom}'",
+        'message': f"{user.get('firstName', '')} {user.get('lastName', '')} vous a envoyé le document '{nom}'",
         'date': datetime.utcnow().isoformat(),
         'lue': False,
         'type': 'document_envoye',
-        'data': {'documentUrl': url, 'userEmail': email}
+        'data': {'documentId': document['id'], 'userEmail': email}
     }
+    
+    # Ajouter la notification au médecin
     medecins_collection.update_one({'email': medecin_email}, {'$push': {'notifications': notif}})
-    send_fcm_notification(
-        medecin.get('fcmToken'), 
-        "Nouveau document", 
-        notif['message'],
-        {'documentUrl': url, 'userEmail': email}
-    )
-    print(f"Document téléversé: {email} pour {medecin_email}")
-    return jsonify({'msg': 'Document téléversé avec succès'}), 201
+    
+    # Envoyer une notification push si le token FCM est disponible
+    if 'fcmToken' in medecin and medecin['fcmToken']:
+        send_fcm_notification(
+            medecin.get('fcmToken'), 
+            "Nouveau document", 
+            notif['message'],
+            {'documentId': document['id'], 'userEmail': email}
+        )
+    
+    print(f"Document envoyé avec succès: {email} -> {medecin_email}, document: {nom}")
+    return jsonify({'msg': 'Document envoyé avec succès', 'document': document}), 201
 
 # Mettre à jour les paramètres
 @app.route('/api/user/settings', methods=['PUT'])
@@ -1021,6 +1054,110 @@ def save_consultation():
     print(f"Consultation enregistrée: {data['userEmail']}")
     return jsonify({'msg': 'Consultation enregistrée avec succès'}), 201
 
+# Statistiques pour les médecins
+@app.route('/api/medecin/stats', methods=['GET'])
+@jwt_required()
+def get_medecin_stats():
+    email = request.args.get('email')
+    identity = get_jwt_identity()
+    
+    if identity != email:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    medecin = medecins_collection.find_one({'email': email})
+    if not medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    
+    # Récupérer tous les rendez-vous du médecin
+    rendez_vous = []
+    for patient in users_collection.find():
+        for rdv in patient.get('rendezVousFuturs', []) + patient.get('historiqueRendezVous', []):
+            if rdv.get('medecinEmail') == email:
+                rdv['patientEmail'] = patient['email']
+                rdv['patientNom'] = f"{patient['firstName']} {patient['lastName']}"
+                rendez_vous.append(rdv)
+    
+    # Calculer les statistiques
+    total_patients = len(set([rdv.get('patientEmail') for rdv in rendez_vous]))
+    total_rendez_vous = len(rendez_vous)
+    rdv_confirmes = len([rdv for rdv in rendez_vous if rdv.get('status') == 'confirmé'])
+    rdv_en_attente = len([rdv for rdv in rendez_vous if rdv.get('status') == 'en attente'])
+    rdv_annules = len([rdv for rdv in rendez_vous if rdv.get('status') == 'annulé'])
+    rdv_termines = len([rdv for rdv in rendez_vous if rdv.get('status') == 'terminé'])
+    
+    # Calculer le taux de présence
+    patients_presents = len([rdv for rdv in rendez_vous if rdv.get('status') == 'terminé' and rdv.get('patientPresent', True)])
+    patients_absents = len([rdv for rdv in rendez_vous if rdv.get('status') == 'terminé' and not rdv.get('patientPresent', True)])
+    taux_presence = 0
+    if patients_presents + patients_absents > 0:
+        taux_presence = round((patients_presents / (patients_presents + patients_absents)) * 100)
+    
+    # Calculer le temps moyen de consultation
+    consultations = [rdv for rdv in rendez_vous if rdv.get('status') == 'terminé' and rdv.get('dureeConsultation')]
+    temps_moyen = 0
+    if consultations:
+        temps_moyen = round(sum([rdv.get('dureeConsultation', 0) for rdv in consultations]) / len(consultations))
+    
+    # Calculer les rendez-vous par mois
+    rendez_vous_par_mois = {}
+    mois_fr = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+    for i in range(12):
+        rendez_vous_par_mois[mois_fr[i]] = 0
+    
+    for rdv in rendez_vous:
+        if 'date' in rdv:
+            try:
+                date = datetime.strptime(rdv['date'], '%Y-%m-%d')
+                mois = date.month - 1  # 0-indexed
+                rendez_vous_par_mois[mois_fr[mois]] += 1
+            except:
+                pass
+    
+    # Calculer les rendez-vous par statut
+    rendez_vous_par_statut = {
+        'confirmé': rdv_confirmes,
+        'en attente': rdv_en_attente,
+        'annulé': rdv_annules,
+        'terminé': rdv_termines
+    }
+    
+    stats = {
+        'totalPatients': total_patients,
+        'totalRendezVous': total_rendez_vous,
+        'rdvConfirmes': rdv_confirmes,
+        'rdvEnAttente': rdv_en_attente,
+        'rdvAnnules': rdv_annules,
+        'rdvTermines': rdv_termines,
+        'patientsPresents': patients_presents,
+        'patientsAbsents': patients_absents,
+        'tauxPresence': taux_presence,
+        'tempsMoyenConsultation': temps_moyen,
+        'rendezVousParMois': rendez_vous_par_mois,
+        'rendezVousParStatut': rendez_vous_par_statut
+    }
+    
+    return jsonify(stats), 200
+
+# Récupérer tous les patients (pour le chat)
+@app.route('/api/patients', methods=['GET'])
+@jwt_required()
+def get_all_patients():
+    email = get_jwt_identity()
+    role = get_jwt().get('role', '')
+    
+    if role != 'medecin':
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    patients = list(users_collection.find({}, {
+        '_id': 0,
+        'email': 1,
+        'firstName': 1,
+        'lastName': 1,
+        'profilePicture': 1
+    }))
+    
+    return jsonify(patients), 200
+
 # Chat API routes
 @app.route('/api/chat/messages', methods=['GET'])
 @jwt_required()
@@ -1150,6 +1287,194 @@ def get_all_user_messages():
     
     print(f"Tous les messages trouvés pour {email}: {len(messages)}")
     return jsonify(messages), 200
+
+# Endpoint pour l'envoi de documents - SUPPRIMÉ POUR ÉVITER LES CONFLITS
+# Nous utilisons déjà /api/user/document pour cette fonctionnalité
+
+# Mettre à jour le statut d'un document
+@app.route('/api/user/document/status', methods=['PUT'])
+@jwt_required()
+def update_document_status():
+    email = get_jwt_identity()
+    data = request.get_json()
+    patient_email = data.get('patientEmail')
+    document_id = data.get('documentId')
+    statut = data.get('statut')
+
+    if not all([patient_email, document_id, statut]):
+        return jsonify({'msg': 'Informations manquantes'}), 400
+
+    # Vérifier que l'utilisateur est un médecin
+    medecin = medecins_collection.find_one({'email': email})
+    if not medecin:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+
+    # Mettre à jour le statut du document
+    result = users_collection.update_one(
+        {'email': patient_email, 'documents.id': document_id},
+        {'$set': {'documents.$.statut': statut}}
+    )
+
+    if result.modified_count == 0:
+        return jsonify({'msg': 'Document non trouvé ou statut inchangé'}), 404
+
+    print(f"Statut du document mis à jour: {document_id} -> {statut}")
+    return jsonify({'msg': 'Statut du document mis à jour avec succès'}), 200
+
+# Mettre à jour les annotations d'un document
+@app.route('/api/user/document/annotation', methods=['PUT'])
+@jwt_required()
+def update_document_annotation():
+    email = get_jwt_identity()
+    data = request.get_json()
+    patient_email = data.get('patientEmail')
+    document_id = data.get('documentId')
+    annotations = data.get('annotations')
+
+    if not all([patient_email, document_id]) or annotations is None:
+        return jsonify({'msg': 'Informations manquantes'}), 400
+
+    # Vérifier que l'utilisateur est un médecin
+    medecin = medecins_collection.find_one({'email': email})
+    if not medecin:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+
+    # Mettre à jour les annotations du document
+    result = users_collection.update_one(
+        {'email': patient_email, 'documents.id': document_id},
+        {'$set': {'documents.$.annotations': annotations}}
+    )
+
+    if result.modified_count == 0:
+        return jsonify({'msg': 'Document non trouvé ou annotations inchangées'}), 404
+
+    # Créer une notification pour le patient
+    notif = {
+        'id': str(ObjectId()),
+        'message': f"Dr. {medecin.get('firstName', '')} {medecin.get('lastName', '')} a annoté votre document",
+        'date': datetime.utcnow().isoformat(),
+        'lue': False,
+        'type': 'document_annote',
+        'data': {'documentId': document_id}
+    }
+
+    # Ajouter la notification au patient
+    users_collection.update_one({'email': patient_email}, {'$push': {'notifications': notif}})
+
+    # Envoyer une notification push si le patient a un token FCM
+    patient = users_collection.find_one({'email': patient_email})
+    if patient and patient.get('fcmToken'):
+        send_fcm_notification(
+            patient.get('fcmToken'), 
+            "Document annoté", 
+            notif['message'],
+            {'documentId': document_id}
+        )
+
+    print(f"Annotations du document mises à jour: {document_id}")
+    return jsonify({'msg': 'Annotations du document mises à jour avec succès'}), 200
+
+# Récupérer tous les patients (pour les médecins)
+@app.route('/api/patients', methods=['GET'])
+@jwt_required()
+def get_all_patients_for_medecin():
+    email = get_jwt_identity()
+    
+    # Vérifier que l'utilisateur est un médecin
+    medecin = medecins_collection.find_one({'email': email})
+    if not medecin:
+        return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    # Récupérer tous les patients
+    patients = list(users_collection.find({'role': 'patient'}))
+    
+    # Convertir ObjectId en string pour la sérialisation JSON
+    for patient in patients:
+        patient['_id'] = str(patient['_id'])
+        
+        # Filtrer les documents pour ne montrer que ceux destinés à ce médecin
+        if 'documents' in patient:
+            patient['documents'] = [doc for doc in patient['documents'] if doc.get('medecinEmail') == email]
+    
+    print(f"Patients récupérés: {len(patients)}")
+    return jsonify(patients), 200
+
+# Récupérer les informations d'un médecin
+@app.route('/api/medecin', methods=['GET'])
+@jwt_required()
+def get_medecin_info():
+    email = get_jwt_identity()
+    medecin_email = request.args.get('email')
+    
+    if not medecin_email:
+        return jsonify({'msg': 'Email du médecin requis'}), 400
+    
+    # Vérifier que l'utilisateur est autorisé à accéder aux informations du médecin
+    if email != medecin_email:
+        user = users_collection.find_one({'email': email})
+        if not user or user.get('role') != 'admin':
+            return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    # Récupérer le médecin
+    medecin = medecins_collection.find_one({'email': medecin_email})
+    if not medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    
+    # Convertir ObjectId en string pour la sérialisation JSON
+    medecin['_id'] = str(medecin['_id'])
+    
+    print(f"Informations du médecin récupérées: {medecin_email}")
+    return jsonify(medecin), 200
+
+# Mettre à jour les informations d'un médecin
+@app.route('/api/medecin', methods=['PUT'])
+@jwt_required()
+def update_medecin():
+    email = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data or not isinstance(data, dict):
+        return jsonify({'msg': 'Données invalides'}), 400
+    
+    medecin_email = data.get('email')
+    if not medecin_email:
+        return jsonify({'msg': 'Email du médecin requis'}), 400
+    
+    # Vérifier que l'utilisateur est autorisé à modifier les informations du médecin
+    if email != medecin_email:
+        user = users_collection.find_one({'email': email})
+        if not user or user.get('role') != 'admin':
+            return jsonify({'msg': 'Accès non autorisé'}), 403
+    
+    # Récupérer le médecin existant
+    existing_medecin = medecins_collection.find_one({'email': medecin_email})
+    if not existing_medecin:
+        return jsonify({'msg': 'Médecin non trouvé'}), 404
+    
+    # Champs autorisés à être mis à jour
+    allowed_fields = [
+        'firstName', 'lastName', 'phoneNumber', 'address', 
+        'specialite', 'tarif', 'description', 'profilePicture'
+    ]
+    
+    # Créer un dictionnaire avec les champs à mettre à jour
+    update_data = {}
+    for field in allowed_fields:
+        if field in data:
+            update_data[field] = data[field]
+    
+    if not update_data:
+        return jsonify({'msg': 'Aucune donnée à mettre à jour'}), 400
+    
+    # Mettre à jour le médecin
+    medecins_collection.update_one({'email': medecin_email}, {'$set': update_data})
+    
+    # Récupérer le médecin mis à jour
+    updated_medecin = medecins_collection.find_one({'email': medecin_email})
+    updated_medecin['_id'] = str(updated_medecin['_id'])
+    
+    print(f"Informations du médecin mises à jour: {medecin_email}")
+    return jsonify(updated_medecin), 200
 
 if __name__ == '__main__':
     # Initialiser les disponibilités des médecins qui n'en ont pas

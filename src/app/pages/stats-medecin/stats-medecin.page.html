@@ -1,0 +1,168 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/accueil-medecin"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Statistiques</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="refreshStats()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div *ngIf="isLoading" class="loading-container">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Chargement des statistiques...</p>
+  </div>
+
+  <div *ngIf="!isLoading">
+    <!-- Résumé des statistiques -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="analytics-outline"></ion-icon>
+          Résumé
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.totalPatients }}</div>
+                <div class="stat-label">Patients totaux</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.totalRendezVous }}</div>
+                <div class="stat-label">Rendez-vous totaux</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvConfirmes }}</div>
+                <div class="stat-label">Confirmés</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvEnAttente }}</div>
+                <div class="stat-label">En attente</div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Rendez-vous par statut -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="pie-chart-outline"></ion-icon>
+          Rendez-vous par statut
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvConfirmes }}</div>
+                <div class="stat-label">Confirmés</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvEnAttente }}</div>
+                <div class="stat-label">En attente</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvAnnules }}</div>
+                <div class="stat-label">Annulés</div>
+              </div>
+            </ion-col>
+            <ion-col size="6">
+              <div class="stat-box">
+                <div class="stat-value">{{ stats.rdvTermines }}</div>
+                <div class="stat-label">Terminés</div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Rendez-vous par mois -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="bar-chart-outline"></ion-icon>
+          Rendez-vous par mois
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="3" *ngFor="let mois of ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']">
+              <div class="month-box">
+                <div class="month-name">{{ mois }}</div>
+                <div class="month-value">{{ stats.rendezVousParMois[mois] || 0 }}</div>
+              </div>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Taux de présence -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="people-outline"></ion-icon>
+          Taux de présence
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="attendance-container">
+          <div class="attendance-rate">
+            <div class="rate-value">{{ stats.tauxPresence }}%</div>
+            <div class="rate-label">Taux de présence</div>
+          </div>
+          <div class="attendance-details">
+            <div class="detail-item">
+              <div class="detail-value">{{ stats.patientsPresents }}</div>
+              <div class="detail-label">Patients présents</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-value">{{ stats.patientsAbsents }}</div>
+              <div class="detail-label">Patients absents</div>
+            </div>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Temps moyen de consultation -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="time-outline"></ion-icon>
+          Durée moyenne de consultation
+        </ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="time-container">
+          <div class="time-value">{{ stats.tempsMoyenConsultation }} min</div>
+          <div class="time-label">Durée moyenne par patient</div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

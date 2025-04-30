@@ -1,24 +1,12 @@
-// Style par défaut
-ion-content {
-  --background: #fff;
-  --color: #000;
+ion-avatar {
+  width: 80px;
+  height: 80px;
 }
 
-// Style pour le dark mode
-body.dark {
-  ion-content {
-    --background: #1a1a1a;
-    --color: #fff;
-  }
-
-  ion-item {
-    --background: #2a2a2a;
-    --color: #fff;
-  }
-
-  ion-label {
-    color: #fff;
-  }
+img {
+  max-width: 100px;
+  border-radius: 50%;
+  margin-top: 10px;
 }
 
 /* Styles pour la section des documents */
@@ -57,7 +45,7 @@ body.dark {
   font-size: 12px;
 }
 
-.document-date {
+.document-date, .document-patient {
   color: var(--ion-color-medium);
 }
 

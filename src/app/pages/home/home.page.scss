@@ -8,3 +8,71 @@ img {
   border-radius: 50%;
   margin-top: 10px;
 }
+
+/* Styles pour la section des documents */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 0;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.document-item {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  --background: var(--ion-color-light);
+}
+
+.document-icon {
+  color: var(--ion-color-primary);
+  font-size: 24px;
+}
+
+.document-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.document-date {
+  color: var(--ion-color-medium);
+}
+
+.document-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  &.non.consulté {
+    color: var(--ion-color-warning);
+  }
+  
+  &.consulté {
+    color: var(--ion-color-success);
+  }
+}
+
+.status-icon {
+  font-size: 10px;
+}
+
+.document-annotations {
+  margin-top: 8px;
+  font-style: italic;
+  color: var(--ion-color-dark);
+  background-color: rgba(var(--ion-color-light-rgb), 0.5);
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}

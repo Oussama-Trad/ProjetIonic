@@ -10,6 +10,11 @@
       <ion-card-subtitle>{{ medecin.specialite }} • {{ medecin.adresse || "Adresse non spécifiée" }}</ion-card-subtitle>
     </ion-card-header>
     
+    <!-- Carte de localisation du médecin -->
+    <div *ngIf="medecin.adresse" class="map-container">
+      <div #map id="map" style="width: 100%; height: 100%;"></div>
+    </div>
+    
     <ion-card-content>
       <!-- Message d'avertissement pour les médecins -->
       <ion-item *ngIf="!isPatient" lines="none" color="warning">
@@ -104,8 +109,12 @@
         
         <h3>
           <ion-icon name="document-text-outline"></ion-icon>
-          Ajouter un document pour le médecin
+          Ajouter un document pour le médecin (facultatif)
         </h3>
+        
+        <ion-note color="medium" class="ion-padding-bottom">
+          Vous pouvez prendre rendez-vous sans ajouter de document. Cette étape est entièrement facultative.
+        </ion-note>
         
         <ion-item>
           <ion-label position="floating">Nom du document</ion-label>

@@ -1,0 +1,57 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/messages-list"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ contactName }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="showOptions()">
+        <ion-icon slot="icon-only" name="ellipsis-vertical"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="chat-container">
+    <div class="message-date-divider" *ngFor="let dateGroup of messagesByDate | keyvalue">
+      <div class="date-label">{{ formatDateLabel(dateGroup.key) }}</div>
+      
+      <div class="message-container" *ngFor="let message of dateGroup.value">
+        <div class="message" [ngClass]="{'sent': message.sender === currentUserEmail, 'received': message.sender !== currentUserEmail}">
+          <div class="message-content">
+            {{ message.content }}
+          </div>
+          <div class="message-time">
+            {{ formatMessageTime(message.timestamp) }}
+            <ion-icon 
+              name="checkmark-done" 
+              *ngIf="message.sender === currentUserEmail" 
+              [ngClass]="{'read': message.read}">
+            </ion-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <div class="message-input-container">
+      <ion-textarea 
+        [(ngModel)]="newMessage" 
+        placeholder="Tapez votre message..." 
+        autoGrow="true"
+        rows="1"
+        maxRows="5"
+        class="message-input"
+        (keyup.enter)="sendMessage()">
+      </ion-textarea>
+      
+      <ion-button fill="clear" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+        <ion-icon slot="icon-only" name="send"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

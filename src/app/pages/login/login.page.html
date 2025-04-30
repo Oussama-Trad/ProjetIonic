@@ -21,16 +21,6 @@
       <ion-button expand="block" (click)="login()">Se connecter</ion-button>
       <ion-button expand="block" color="light" (click)="goToRegister()">S'inscrire</ion-button>
 
-      <!-- Boutons pour connexion avec Google et Facebook -->
-      <ion-button expand="block" color="danger" (click)="loginWithGoogle()">
-        <ion-icon name="logo-google" slot="start"></ion-icon>
-        Connexion avec Google
-      </ion-button>
-      <ion-button expand="block" color="primary" (click)="loginWithFacebook()">
-        <ion-icon name="logo-facebook" slot="start"></ion-icon>
-        Connexion avec Facebook
-      </ion-button>
-
       <ion-text color="danger" *ngIf="errorMessage">
         <p>{{ errorMessage }}</p>
       </ion-text>

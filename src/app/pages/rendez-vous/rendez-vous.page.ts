@@ -1,14 +1,7 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LoadingController, ToastController, AlertController } from '@ionic/angular';
-
-// Définir les types pour Google Maps
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 
 @Component({
   selector: 'app-rendez-vous',
@@ -16,10 +9,7 @@ declare global {
   styleUrls: ['./rendez-vous.page.scss'],
   standalone: false,
 })
-export class RendezVousPage implements OnInit, AfterViewInit {
-  @ViewChild('map', { static: false }) mapElement!: ElementRef;
-  map: any;
-  
+export class RendezVousPage implements OnInit {
   medecin: any = {};
   currentMonth: Date = new Date();
   calendarDays: { 
@@ -35,9 +25,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
   documentUrl: string | null = null;
   isLoading: boolean = false;
   isPatient: boolean = false;
-  mapInitialized: boolean = false;
-
-  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   constructor(
     private route: ActivatedRoute,
@@ -62,10 +49,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     }
     
     this.checkAuth();
-  }
-
-  ngAfterViewInit() {
-    // La carte sera initialisée une fois que les données du médecin seront chargées
   }
 
   async showLoading(message: string) {
@@ -123,11 +106,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       this.medecin = response;
       console.log('Données médecin chargées :', this.medecin);
       this.loadCalendar();
-      
-      // Attendre que le DOM soit prêt avant d'initialiser la carte
-      setTimeout(() => {
-        this.initMap();
-      }, 1000);
     } catch (err: any) {
       console.error('Erreur chargement médecin :', err);
       this.hideLoading();
@@ -158,22 +136,13 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     const year = this.currentMonth.getFullYear();
     const month = this.currentMonth.getMonth();
     
-    // Premier jour du mois
     const firstDay = new Date(year, month, 1);
-    
-    // Dernier jour du mois
     const lastDay = new Date(year, month + 1, 0);
-    
-    // Nombre de jours dans le mois
     const daysInMonth = lastDay.getDate();
-    
-    // Jour de la semaine du premier jour (0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    // On ajuste pour que lundi soit le premier jour (0)
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     
     this.calendarDays = [];
     
-    // Jours du mois précédent pour compléter la première semaine
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = 0; i < startDay; i++) {
       const prevDate = new Date(year, month - 1, prevMonthLastDay - startDay + i + 1);
@@ -184,7 +153,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       });
     }
     
-    // Jours du mois actuel
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
@@ -198,8 +166,7 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       });
     }
     
-    // Jours du mois suivant pour compléter la dernière semaine
-    const remainingDays = 42 - this.calendarDays.length; // 6 semaines * 7 jours = 42
+    const remainingDays = 42 - this.calendarDays.length;
     for (let i = 1; i <= remainingDays; i++) {
       const nextDate = new Date(year, month + 1, i);
       this.calendarDays.push({ 
@@ -218,7 +185,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
   }
 
   isDayAvailable(date: Date): boolean {
-    // Vérifier si c'est un jour dans le passé
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -226,30 +192,23 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       return false;
     }
     
-    // Vérifier si c'est un week-end
     const dayOfWeek = date.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return false;
     }
 
-    // Convertir la date en format ISO string YYYY-MM-DD
     const dateStr = date.toISOString().split('T')[0];
-    
-    // Vérifier la disponibilité du médecin pour ce jour de la semaine
     const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const jourSemaine = joursSemaine[dayOfWeek].toLowerCase();
     
-    // Si le médecin n'a pas de disponibilités pour ce jour, retourner false
     if (!this.medecin.disponibilites || !this.medecin.disponibilites[jourSemaine] || this.medecin.disponibilites[jourSemaine].length === 0) {
       return false;
     }
     
-    // Récupérer tous les rendez-vous pour ce jour
     const rdvConflicts = (this.disponibilites.rendezVousConfirmes || [])
       .concat(this.disponibilites.rendezVousDemandes || [])
       .filter((rdv: any) => rdv.date === dateStr && ['accepté', 'en attente'].includes(rdv.statut));
 
-    // Vérifier s'il y a des créneaux disponibles
     const availableSlots = this.medecin.disponibilites[jourSemaine].filter((heure: string) =>
       !rdvConflicts.some((rdv: any) => rdv.heure === heure)
     );
@@ -258,7 +217,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
   }
 
   selectDay(day: { date: Date; isAvailable: boolean; isToday: boolean }) {
-    // Ne rien faire si le jour n'est pas disponible
     if (!day.isAvailable) {
       console.log('Jour non disponible:', day.date);
       this.showToast('Ce jour n\'est pas disponible pour les rendez-vous', 'warning');
@@ -269,7 +227,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     this.selectedHeure = '';
     console.log('Jour sélectionné:', this.selectedDay);
     
-    // Charger les créneaux disponibles pour ce jour
     this.loadCreneauxDisponibles(this.selectedDay);
   }
 
@@ -286,10 +243,8 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       console.log('Créneaux disponibles:', response);
       
       if (response.disponible) {
-        // Mettre à jour l'interface avec les créneaux disponibles
         this.disponibilites.creneauxDisponibles = response.creneaux;
       } else {
-        // Afficher un message si aucun créneau n'est disponible
         this.showToast(response.message || 'Aucun créneau disponible pour ce jour', 'warning');
         this.disponibilites.creneauxDisponibles = [];
       }
@@ -305,7 +260,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
   getHoursForSelectedDay(): { heure: string; disponible: boolean }[] {
     if (!this.selectedDay) return [];
     
-    // Si nous avons des créneaux disponibles chargés depuis l'API
     if (this.disponibilites.creneauxDisponibles) {
       return this.disponibilites.creneauxDisponibles.map((heure: string) => {
         return { heure, disponible: true };
@@ -314,22 +268,18 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       );
     }
     
-    // Fallback à l'ancienne méthode si les créneaux ne sont pas disponibles
     const selectedDate = new Date(this.selectedDay);
     const joursSemaine = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     const jourSemaine = joursSemaine[selectedDate.getDay()].toLowerCase();
     
-    // Si le médecin n'a pas de disponibilités pour ce jour, retourner un tableau vide
     if (!this.medecin.disponibilites || !this.medecin.disponibilites[jourSemaine]) {
       return [];
     }
     
-    // Récupérer tous les rendez-vous pour ce jour
     const rdvConflicts = (this.disponibilites.rendezVousConfirmes || [])
       .concat(this.disponibilites.rendezVousDemandes || [])
       .filter((rdv: any) => rdv.date === this.selectedDay && ['accepté', 'en attente'].includes(rdv.statut));
     
-    // Créer un tableau avec toutes les heures et leur disponibilité
     return this.medecin.disponibilites[jourSemaine].map((heure: string) => {
       const disponible = !rdvConflicts.some((rdv: any) => rdv.heure === heure);
       return { heure, disponible };
@@ -368,7 +318,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       this.documentName = this.documentFile.name;
       console.log('Document sélectionné:', this.documentName);
       
-      // Pour simuler un téléversement réussi
       this.uploadDocument();
     }
   }
@@ -379,10 +328,8 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     const loading = await this.showLoading('Téléversement du document...');
     
     try {
-      // Simuler un téléversement
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Dans un cas réel, vous téléverseriez le fichier sur un serveur et récupéreriez l'URL
       this.documentUrl = `https://example.com/documents/${this.documentName}`;
       
       this.hideLoading();
@@ -433,7 +380,7 @@ export class RendezVousPage implements OnInit, AfterViewInit {
   
   async submitRendezVous(userEmail: string) {
     if (!this.isPatient) {
-      this.showToast('Les médecins ne peuvent pas prendre de rendez-vous', 'warning');
+      this.showToast('Les médecins ne peuvent pas prendre de rendez-vous. Cette fonctionnalité est réservée aux patients.', 'warning');
       return;
     }
     
@@ -447,13 +394,11 @@ export class RendezVousPage implements OnInit, AfterViewInit {
       motif: 'Consultation générale',
     };
 
-    // Document est maintenant vraiment optionnel
     if (this.documentUrl && this.documentName) {
       rdvData.document = { nom: this.documentName, url: this.documentUrl };
     }
 
     try {
-      // Use the updated reserverRendezVous with userEmail parameter
       await this.authService.reserverRendezVous(
         rdvData.medecinEmail,
         rdvData.userEmail,
@@ -476,11 +421,7 @@ export class RendezVousPage implements OnInit, AfterViewInit {
               this.documentName = '';
               this.documentFile = null;
               this.documentUrl = null;
-              if (this.fileInput && this.fileInput.nativeElement) {
-                this.fileInput.nativeElement.value = '';
-              }
               this.loadDisponibilites(this.medecin.email);
-              // Rediriger vers l'accueil après confirmation
               this.goToAccueil();
             }
           }
@@ -518,86 +459,6 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     this.router.navigate(['/conversation'], { 
       queryParams: { 
         otherUser: this.medecin.email
-      }
-    });
-  }
-
-  initMap() {
-    if (!this.mapElement || this.mapInitialized || !this.medecin.adresse) return;
-    
-    setTimeout(() => {
-      try {
-        this.mapInitialized = true;
-        
-        // Options de la carte
-        const mapOptions = {
-          center: { lat: 48.8566, lng: 2.3522 }, // Paris par défaut
-          zoom: 15,
-          mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-          disableDefaultUI: true,
-          zoomControl: true,
-          mapTypeControl: false,
-          scaleControl: true,
-          streetViewControl: false,
-          rotateControl: false,
-          fullscreenControl: true
-        };
-        
-        // Créer la carte
-        this.map = new window.google.maps.Map(this.mapElement.nativeElement, mapOptions);
-        
-        // Géocoder l'adresse du médecin
-        this.geocodeAddress(this.medecin.adresse);
-      } catch (error) {
-        console.error('Erreur lors de l\'initialisation de la carte:', error);
-      }
-    }, 500); // Délai pour s'assurer que l'élément DOM est prêt
-  }
-
-  geocodeAddress(address: string) {
-    if (!address) return;
-    
-    const geocoder = new window.google.maps.Geocoder();
-    
-    geocoder.geocode({ 'address': address }, (results: any, status: string) => {
-      if (status === 'OK' && results && results.length > 0) {
-        const position = results[0].geometry.location;
-        
-        // Centrer la carte sur l'adresse
-        this.map.setCenter(position);
-        
-        // Ajouter un marqueur
-        const marker = new window.google.maps.Marker({
-          position: position,
-          map: this.map,
-          title: `Dr. ${this.medecin.firstName} ${this.medecin.lastName}`,
-          animation: window.google.maps.Animation.DROP
-        });
-        
-        // Ajouter une fenêtre d'info
-        const infoContent = `
-          <div class="info-window">
-            <h3>Dr. ${this.medecin.firstName} ${this.medecin.lastName}</h3>
-            <p><strong>Spécialité:</strong> ${this.medecin.specialite}</p>
-            <p><strong>Adresse:</strong> ${this.medecin.adresse}</p>
-            <p><strong>Téléphone:</strong> ${this.medecin.telephone || 'Non disponible'}</p>
-          </div>
-        `;
-        
-        const infoWindow = new window.google.maps.InfoWindow({
-          content: infoContent
-        });
-        
-        // Ouvrir la fenêtre d'info par défaut
-        infoWindow.open(this.map, marker);
-        
-        // Ajouter un écouteur d'événements pour ouvrir la fenêtre d'info au clic
-        marker.addListener('click', () => {
-          infoWindow.open(this.map, marker);
-        });
-      } else {
-        console.error('Erreur de géocodage pour:', address, status);
-        this.showToast('Erreur de géocodage : ' + status, 'danger');
       }
     });
   }

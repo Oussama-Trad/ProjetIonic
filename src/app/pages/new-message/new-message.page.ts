@@ -48,7 +48,7 @@ export class NewMessagePage implements OnInit {
         const medecinContacts = medecins && Array.isArray(medecins) ? medecins.map(medecin => {
           const firstName = medecin.firstName || medecin.prenom || 'Inconnu';
           const lastName = medecin.lastName || medecin.nom || 'Inconnu';
-          const profilePic = medecin.profilePicture || medecin.photoProfil || `https://i.pravatar.cc/300?u=${medecin.email}`;
+          const profilePic = medecin.profilePicture ? medecin.profilePicture : `https://i.pravatar.cc/300?u=${medecin.email}`;
           return {
             email: medecin.email,
             displayName: `${firstName} ${lastName}`,
@@ -60,7 +60,7 @@ export class NewMessagePage implements OnInit {
         const patientContacts = patients && Array.isArray(patients) ? patients.map(patient => {
           const firstName = patient.firstName || patient.prenom || 'Inconnu';
           const lastName = patient.lastName || patient.nom || 'Inconnu';
-          const profilePic = patient.profilePicture || patient.photoProfil || `https://i.pravatar.cc/300?u=${patient.email}`;
+          const profilePic = patient.profilePicture ? patient.profilePicture : `https://i.pravatar.cc/300?u=${patient.email}`;
           return {
             email: patient.email,
             displayName: `${firstName} ${lastName}`,

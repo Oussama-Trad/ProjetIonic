@@ -1,7 +1,8 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-import jwt
 from datetime import datetime, timedelta
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt, create_access_token
+import jwt
 import bcrypt
 from flask import Flask, jsonify, request, make_response, redirect, url_for
 from flask_cors import CORS
@@ -194,12 +195,7 @@ def google_callback():
             users_collection.insert_one(user_data)
             user = user_data
 
-        jwt_token = jwt.encode({
-            'sub': email,
-            'email': email,
-            'role': 'patient',
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+        token = create_access_token(identity=email, additional_claims={'role': 'patient'}, expires_delta=timedelta(hours=24))
 
         frontend_url = f"http://localhost:8102/login?access_token={jwt_token}&email={email}&role=patient"
         print(f"Redirecting to frontend: {frontend_url}")
@@ -250,12 +246,7 @@ def facebook_callback():
             users_collection.insert_one(user_data)
             user = user_data
 
-        jwt_token = jwt.encode({
-            'sub': email,
-            'email': email,
-            'role': 'patient',
-            'exp': datetime.utcnow() + timedelta(hours=24)
-        }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+        jwt_token = create_access_token(identity=email, additional_claims={'role': 'patient'}, expires_delta=timedelta(hours=24))
 
         frontend_url = f"http://localhost:8102/login?access_token={jwt_token}&email={email}&role=patient"
         print(f"Redirecting to frontend: {frontend_url}")
@@ -323,12 +314,7 @@ def login():
     if medecin and 'motDePasse' in medecin:
         print(f"Médecin trouvé: {medecin}")
         if verify_password(password, medecin['motDePasse']):
-            token = jwt.encode({
-                'sub': email,
-                'email': email,
-                'role': 'medecin',
-                'exp': datetime.utcnow() + timedelta(hours=24)
-            }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+            token = create_access_token(identity=email, additional_claims={'role': 'medecin'}, expires_delta=timedelta(hours=24))
             medecins_collection.update_one({'email': email}, {'$set': {'fcmToken': fcm_token}})
             print(f"Token généré pour médecin: {token}")
             return jsonify({'access_token': token, 'email': email, 'role': 'medecin', 'msg': 'Connexion réussie'}), 200
@@ -1145,7 +1131,7 @@ def get_all_patients():
     email = get_jwt_identity()
     role = get_jwt().get('role', '')
     
-    if role != 'medecin':
+    if role not in ['medecin', 'patient']:
         return jsonify({'msg': 'Accès non autorisé'}), 403
     
     patients = list(users_collection.find({}, {
@@ -1374,29 +1360,30 @@ def update_document_annotation():
     print(f"Annotations du document mises à jour: {document_id}")
     return jsonify({'msg': 'Annotations du document mises à jour avec succès'}), 200
 
-# Récupérer tous les patients (pour les médecins)
+# Récupérer tous les patients (pour les médecins et utilisateurs)
 @app.route('/api/patients', methods=['GET'])
 @jwt_required()
-def get_all_patients_for_medecin():
+def get_all_patients_for_role():
     email = get_jwt_identity()
-    
-    # Vérifier que l'utilisateur est un médecin
-    medecin = medecins_collection.find_one({'email': email})
-    if not medecin:
+    role = get_jwt().get('role', '')
+
+    # Autoriser l'accès aux médecins et aux utilisateurs (patients)
+    if role not in ['medecin', 'patient']:
+        print(f"Accès non autorisé pour le rôle: {role}")
         return jsonify({'msg': 'Accès non autorisé'}), 403
-    
+
     # Récupérer tous les patients
     patients = list(users_collection.find({'role': 'patient'}))
-    
+
     # Convertir ObjectId en string pour la sérialisation JSON
     for patient in patients:
         patient['_id'] = str(patient['_id'])
-        
-        # Filtrer les documents pour ne montrer que ceux destinés à ce médecin
-        if 'documents' in patient:
+
+        # Si l'utilisateur est médecin, filtrer les documents destinés à ce médecin
+        if role == 'medecin' and 'documents' in patient:
             patient['documents'] = [doc for doc in patient['documents'] if doc.get('medecinEmail') == email]
-    
-    print(f"Patients récupérés: {len(patients)}")
+
+    print(f"Patients récupérés: {len(patients)} pour le rôle {role}")
     return jsonify(patients), 200
 
 # Récupérer les informations d'un médecin

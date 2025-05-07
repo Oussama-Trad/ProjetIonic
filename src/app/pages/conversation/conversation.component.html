@@ -38,6 +38,9 @@
         </div>
         
         <div class="message" [ngClass]="{'own-message': isOwnMessage(message), 'other-message': !isOwnMessage(message)}">
+          <ion-avatar class="message-avatar">
+            <img [src]="isOwnMessage(message) ? getCurrentUserPhoto() : getOtherUserPhoto()" alt="Photo de profil">
+          </ion-avatar>
           <div class="message-content">
             {{ message.content }}
             <div class="message-time">{{ formatTime(message.timestamp) }}</div>

@@ -21,13 +21,11 @@ export class NotificationsComponent implements OnInit {
   constructor(private authService: AuthService) {}
 
   ngOnInit() {
-    this.role = localStorage.getItem('role');
     const email = localStorage.getItem('email');
     if (email) {
-      const fetchMethod = this.role === 'medecin' ? this.authService.getMedecin : this.authService.getUser;
-      fetchMethod(email).subscribe({
-        next: (response: any) => {
-          this.notifications = response.notifications || [];
+      this.authService.getNotifications(email).subscribe({
+        next: (notifications: any[]) => {
+          this.notifications = notifications;
         },
         error: (err) => console.error('Erreur chargement notifications :', err),
       });

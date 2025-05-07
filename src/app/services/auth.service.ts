@@ -272,7 +272,7 @@ export class AuthService {
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    return this.http.get<any>(`${this.apiUrl}/disponibilites?email=${medecinEmail}`, { headers }).pipe(
+    return this.http.get<any>(`${this.apiUrl}/medecin/disponibilites?email=${medecinEmail}`, { headers }).pipe(
       tap((disponibilites) => console.log('Disponibilités récupérées pour', medecinEmail)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des disponibilités:', error);
@@ -289,7 +289,7 @@ export class AuthService {
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
     const body = { email: medecinEmail, disponibilites };
-    return this.http.put<any>(`${this.apiUrl}/disponibilites`, body, { headers }).pipe(
+    return this.http.put<any>(`${this.apiUrl}/medecin/disponibilites`, body, { headers }).pipe(
       tap((response) => console.log('Disponibilités mises à jour pour', medecinEmail)),
       catchError((error) => {
         console.error('Erreur lors de la mise à jour des disponibilités:', error);
@@ -298,15 +298,15 @@ export class AuthService {
     );
   }
 
-  reserverRendezVous(medecinEmail: string, date: string, heure: string, motif: string): Observable<any> {
+  reserverRendezVous(medecinEmail: string, userEmail: string, date: string, heure: string, motif: string): Observable<any> {
     const token = localStorage.getItem('token');
     if (!token) {
       console.warn('Pas de token JWT pour reserverRendezVous');
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    const body = { medecinEmail, date, heure, motif };
-    return this.http.post<any>(`${this.apiUrl}/rendez-vous`, body, { headers }).pipe(
+    const body = { medecinEmail, userEmail, date, heure, motif };
+    return this.http.post<any>(`${this.apiUrl}/rendezvous`, body, { headers }).pipe(
       tap((response) => console.log('Rendez-vous réservé avec', medecinEmail, 'pour le', date, 'à', heure)),
       catchError((error) => {
         console.error('Erreur lors de la réservation du rendez-vous:', error);
@@ -680,9 +680,10 @@ export class AuthService {
   }
 
   // Créer un rendez-vous (alias pour reserverRendezVous)
-  createRendezVous(rdvData: any): Observable<any> {
+  createRendezVous(rdvData: any, userEmail: string): Observable<any> {
     return this.reserverRendezVous(
       rdvData.medecinEmail,
+      userEmail,
       rdvData.date,
       rdvData.heure,
       rdvData.motif
@@ -697,8 +698,8 @@ export class AuthService {
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    const body = { userEmail, date, heure, action };
-    return this.http.put<any>(`${this.apiUrl}/rendez-vous/manage`, body, { headers }).pipe(
+    const body = { userEmail, date, heure };
+    return this.http.put<any>(`${this.apiUrl}/medecin/rendezvous/${action}`, body, { headers }).pipe(
       tap((response) => console.log(`Rendez-vous ${action} pour ${userEmail} le ${date} à ${heure}`)),
       catchError((error) => {
         console.error(`Erreur lors de l'action ${action} du rendez-vous:`, error);
@@ -715,7 +716,7 @@ export class AuthService {
       return throwError(() => new Error('Utilisateur non connecté'));
     }
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    return this.http.get<any>(`${this.apiUrl}/creneaux-disponibles?email=${medecinEmail}&date=${date}`, { headers }).pipe(
+    return this.http.get<any>(`${this.apiUrl}/medecin/creneaux-disponibles?email=${medecinEmail}&date=${date}`, { headers }).pipe(
       tap((creneaux) => console.log('Créneaux disponibles récupérés pour', medecinEmail, 'le', date)),
       catchError((error) => {
         console.error('Erreur lors de la récupération des créneaux disponibles:', error);

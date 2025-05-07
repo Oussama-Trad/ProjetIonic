@@ -1476,6 +1476,25 @@ def update_medecin():
     print(f"Informations du médecin mises à jour: {medecin_email}")
     return jsonify(updated_medecin), 200
 
+@app.route('/api/notifications', methods=['GET'])
+@jwt_required()
+def get_notifications():
+    email = request.args.get('email')
+    if not email:
+        return jsonify({'msg': 'Email requis'}), 400
+    
+    user = users_collection.find_one({'email': email}, {'_id': 0})
+    if user:
+        notifications = user.get('notifications', [])
+        return jsonify(notifications), 200
+    
+    medecin = medecins_collection.find_one({'email': email}, {'_id': 0})
+    if medecin:
+        notifications = medecin.get('notifications', [])
+        return jsonify(notifications), 200
+    
+    return jsonify({'msg': 'Utilisateur non trouvé'}), 404
+
 if __name__ == '__main__':
     # Initialiser les disponibilités des médecins qui n'en ont pas
     print("Vérification des disponibilités des médecins...")

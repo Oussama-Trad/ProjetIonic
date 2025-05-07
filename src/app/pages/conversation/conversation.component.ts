@@ -17,6 +17,7 @@ export class ConversationComponent implements OnInit, AfterViewChecked {
   otherUserEmail: string = '';
   currentUserEmail: string = '';
   otherUser: any = null;
+  currentUser: any = null;
   messages: ChatMessage[] = [];
   newMessage: string = '';
   isLoading: boolean = false;
@@ -37,6 +38,7 @@ export class ConversationComponent implements OnInit, AfterViewChecked {
       if (params['otherUser']) {
         this.otherUserEmail = params['otherUser'];
         this.loadOtherUserDetails();
+        this.loadCurrentUserDetails();
         this.loadMessages();
         
         // Rafraîchir les messages toutes les 10 secondes
@@ -91,6 +93,32 @@ export class ConversationComponent implements OnInit, AfterViewChecked {
         },
         error: (err) => {
           console.error('Erreur chargement patient:', err);
+        }
+      });
+    }
+  }
+
+  async loadCurrentUserDetails() {
+    const userRole = localStorage.getItem('role') || '';
+    
+    if (userRole === 'patient') {
+      // Le current user est patient
+      this.authService.getUser(this.currentUserEmail).subscribe({
+        next: (user) => {
+          this.currentUser = user;
+        },
+        error: (err) => {
+          console.error('Erreur chargement utilisateur courant:', err);
+        }
+      });
+    } else {
+      // Le current user est médecin
+      this.authService.getMedecin(this.currentUserEmail).subscribe({
+        next: (medecin) => {
+          this.currentUser = medecin;
+        },
+        error: (err) => {
+          console.error('Erreur chargement médecin courant:', err);
         }
       });
     }
@@ -166,6 +194,14 @@ export class ConversationComponent implements OnInit, AfterViewChecked {
     
     return this.otherUser.photoProfil || 
            this.otherUser.profilePicture || 
+           'assets/default-avatar.png';
+  }
+
+  getCurrentUserPhoto(): string {
+    if (!this.currentUser) return 'assets/default-avatar.png';
+
+    return this.currentUser.photoProfil ||
+           this.currentUser.profilePicture ||
            'assets/default-avatar.png';
   }
   

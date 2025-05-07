@@ -130,7 +130,7 @@ export class AccueilMedecinPage implements OnInit {
   
   async confirmRendezVous(rdv: any) {
     try {
-      await this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, 'confirmer').toPromise();
+      await this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, 'accept').toPromise();
       this.showToast('Rendez-vous confirmé avec succès', 'success');
       // Actualiser la liste des rendez-vous
       const medecinEmail = localStorage.getItem('email');
@@ -145,7 +145,7 @@ export class AccueilMedecinPage implements OnInit {
   
   async rejectRendezVous(rdv: any) {
     try {
-      await this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, 'rejeter').toPromise();
+      await this.authService.manageRendezVous(rdv.userEmail, rdv.date, rdv.heure, 'refuse').toPromise();
       this.showToast('Rendez-vous rejeté', 'success');
       // Actualiser la liste des rendez-vous
       const medecinEmail = localStorage.getItem('email');

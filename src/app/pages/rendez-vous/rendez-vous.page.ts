@@ -453,7 +453,14 @@ export class RendezVousPage implements OnInit, AfterViewInit {
     }
 
     try {
-      await this.authService.createRendezVous(rdvData).toPromise();
+      // Use the updated reserverRendezVous with userEmail parameter
+      await this.authService.reserverRendezVous(
+        rdvData.medecinEmail,
+        rdvData.userEmail,
+        rdvData.date,
+        rdvData.heure,
+        rdvData.motif
+      ).toPromise();
       
       loading.dismiss();
       
@@ -590,6 +597,7 @@ export class RendezVousPage implements OnInit, AfterViewInit {
         });
       } else {
         console.error('Erreur de géocodage pour:', address, status);
+        this.showToast('Erreur de géocodage : ' + status, 'danger');
       }
     });
   }

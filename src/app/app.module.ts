@@ -1,8 +1,9 @@
-import { NgModule } from '@angular/core';
+import { NgModule, LOCALE_ID } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AngularFireModule } from '@angular/fire/compat';
@@ -27,6 +28,8 @@ import { RendezVousMedecinPage } from './pages/rendez-vous-medecin/rendez-vous-m
 import { TousLesMedecinsPage } from './pages/tous-les-medecins/tous-les-medecins.page';
 import { SharedModule } from './shared.module';
 import { ConversationComponent } from './pages/conversation/conversation.component';
+
+registerLocaleData(localeFr);
 
 @NgModule({
   declarations: [
@@ -60,6 +63,7 @@ import { ConversationComponent } from './pages/conversation/conversation.compone
     AngularFireModule.initializeApp(environment.firebase),
     AngularFireMessagingModule,
   ],
+  providers: [{ provide: LOCALE_ID, useValue: 'fr' }],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
 import { AuthService } from '../../services/auth.service';
+import { forkJoin } from 'rxjs';
 
 interface Contact {
   email: string;
@@ -37,39 +38,48 @@ export class NewMessagePage implements OnInit {
 
   async loadContacts() {
     this.isLoading = true;
+    this.hasError = false;
 
-    try {
-      // Charger la liste des médecins comme contacts possibles
-      this.authService.getAllMedecins().subscribe({
-        next: (medecins) => {
-          if (medecins && Array.isArray(medecins)) {
-            this.contacts = medecins.map(medecin => {
-              const firstName = medecin.firstName || medecin.prenom || 'Inconnu';
-              const lastName = medecin.lastName || medecin.nom || 'Inconnu';
-              const profilePic = medecin.profilePicture || medecin.photoProfil || `https://i.pravatar.cc/300?u=${medecin.email}`;
-              return {
-                email: medecin.email,
-                displayName: `${firstName} ${lastName}`,
-                role: 'medecin',
-                profilePicture: profilePic
-              };
-            });
-            this.filteredContacts = [...this.contacts];
-          }
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Erreur lors du chargement des contacts:', error);
-          this.isLoading = false;
-          this.hasError = true;
-          this.showErrorToast('Impossible de charger la liste des contacts');
-        }
-      });
-    } catch (error) {
-      console.error('Erreur globale:', error);
-      this.isLoading = false;
-      this.hasError = true;
-    }
+    forkJoin({
+      medecins: this.authService.getAllMedecins(),
+      patients: this.authService.getAllPatients()
+    }).subscribe({
+      next: ({ medecins, patients }) => {
+        const medecinContacts = medecins && Array.isArray(medecins) ? medecins.map(medecin => {
+          const firstName = medecin.firstName || medecin.prenom || 'Inconnu';
+          const lastName = medecin.lastName || medecin.nom || 'Inconnu';
+          const profilePic = medecin.profilePicture || medecin.photoProfil || `https://i.pravatar.cc/300?u=${medecin.email}`;
+          return {
+            email: medecin.email,
+            displayName: `${firstName} ${lastName}`,
+            role: 'medecin',
+            profilePicture: profilePic
+          };
+        }) : [];
+
+        const patientContacts = patients && Array.isArray(patients) ? patients.map(patient => {
+          const firstName = patient.firstName || patient.prenom || 'Inconnu';
+          const lastName = patient.lastName || patient.nom || 'Inconnu';
+          const profilePic = patient.profilePicture || patient.photoProfil || `https://i.pravatar.cc/300?u=${patient.email}`;
+          return {
+            email: patient.email,
+            displayName: `${firstName} ${lastName}`,
+            role: 'patient',
+            profilePicture: profilePic
+          };
+        }) : [];
+
+        this.contacts = [...medecinContacts, ...patientContacts];
+        this.filteredContacts = [...this.contacts];
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des contacts:', error);
+        this.isLoading = false;
+        this.hasError = true;
+        this.showErrorToast('Impossible de charger la liste des contacts');
+      }
+    });
   }
 
   filterContacts() {
@@ -98,7 +108,6 @@ export class NewMessagePage implements OnInit {
   }
 
   startConversation(contact: Contact) {
-    // Naviguer vers la page de conversation avec l'email du contact
     this.router.navigate(['/messages', contact.email]);
   }
 

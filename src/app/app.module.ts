@@ -21,7 +21,6 @@ import { HomePage } from './pages/home/home.page';
 import { LoginPage } from './pages/login/login.page';
 import { MedecinPage } from './pages/medecin/medecin.page';
 import { NotificationsComponent } from './pages/notifications/notifications.page';
-import { ParametresPage } from './pages/parametres/parametres.page';
 import { RegisterPage } from './pages/register/register.page';
 import { RendezVousPage } from './pages/rendez-vous/rendez-vous.page';
 import { RendezVousMedecinPage } from './pages/rendez-vous-medecin/rendez-vous-medecin.page';
@@ -45,7 +44,6 @@ registerLocaleData(localeFr);
     LoginPage,
     MedecinPage,
     NotificationsComponent,
-    ParametresPage,
     RegisterPage,
     RendezVousPage,
     RendezVousMedecinPage,

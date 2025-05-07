@@ -9,7 +9,6 @@ import { RendezVousPage } from './pages/rendez-vous/rendez-vous.page';
 import { AccueilMedecinPage } from './pages/accueil-medecin/accueil-medecin.page';
 import { ConsultationPage } from './pages/consultation/consultation.page';
 import { HistoriquePage } from './pages/historique/historique.page';
-import { ParametresPage } from './pages/parametres/parametres.page';
 import { TousLesMedecinsPage } from './pages/tous-les-medecins/tous-les-medecins.page';
 import { ConversationComponent } from './pages/conversation/conversation.component';
 import { DisponibilitesMedecinPage } from './pages/disponibilites-medecin/disponibilites-medecin.page';
@@ -70,8 +69,7 @@ const routes: Routes = [
       { 
         path: 'messages-list',
         loadChildren: () => import('./pages/messages-list/messages-list.module').then(m => m.MessagesListPageModule)
-      },
-      { path: 'parametres', component: ParametresPage },
+      }
     ],
   },
   // Routes pour les médecins (avec tabs-medecin)
@@ -86,7 +84,6 @@ const routes: Routes = [
         path: 'messages-list',
         loadChildren: () => import('./pages/messages-list/messages-list.module').then(m => m.MessagesListPageModule)
       },
-      { path: 'parametres', component: ParametresPage },
       { 
         path: 'stats-medecin',
         loadChildren: () => import('./pages/stats-medecin/stats-medecin.module').then(m => m.StatsMedecinPageModule)
@@ -94,7 +91,7 @@ const routes: Routes = [
       {
         path: 'profil-medecin',
         loadChildren: () => import('./pages/profil-medecin/profil-medecin.module').then(m => m.ProfilMedecinPageModule)
-      },
+      }
     ],
   },
   { path: '**', redirectTo: '/login' }

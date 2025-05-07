@@ -43,12 +43,17 @@ export class NewMessagePage implements OnInit {
       this.authService.getAllMedecins().subscribe({
         next: (medecins) => {
           if (medecins && Array.isArray(medecins)) {
-            this.contacts = medecins.map(medecin => ({
-              email: medecin.email,
-              displayName: `${medecin.firstName} ${medecin.lastName}`,
-              role: 'medecin',
-              profilePicture: medecin.profilePicture || `https://i.pravatar.cc/300?u=${medecin.email}`
-            }));
+            this.contacts = medecins.map(medecin => {
+              const firstName = medecin.firstName || medecin.prenom || 'Inconnu';
+              const lastName = medecin.lastName || medecin.nom || 'Inconnu';
+              const profilePic = medecin.profilePicture || medecin.photoProfil || `https://i.pravatar.cc/300?u=${medecin.email}`;
+              return {
+                email: medecin.email,
+                displayName: `${firstName} ${lastName}`,
+                role: 'medecin',
+                profilePicture: profilePic
+              };
+            });
             this.filteredContacts = [...this.contacts];
           }
           this.isLoading = false;
@@ -106,4 +111,4 @@ export class NewMessagePage implements OnInit {
     });
     await toast.present();
   }
-} 
+}

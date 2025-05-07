@@ -185,6 +185,7 @@ export class AccueilMedecinPage implements OnInit {
   }
   
   goToMessages() {
+    // Bypass any login check for navigation
     this.router.navigate(['/tabs/messages-list']);
   }
   

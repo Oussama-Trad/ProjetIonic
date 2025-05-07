@@ -111,3 +111,41 @@ ion-popover {
     box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
   }
 }
+/* Responsive styles for mobile */
+@media (max-width: 480px) {
+  ion-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 10px;
+  }
+
+  ion-title {
+    font-size: 1em;
+    max-width: 100%;
+    text-align: center;
+    margin: 5px 0;
+    white-space: normal;
+  }
+
+  ion-buttons {
+    margin-top: 5px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  ion-avatar {
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+  }
+
+  .notifications {
+    margin-right: 10px;
+  }
+
+  ion-button[color="light"] {
+    font-size: 0.8em;
+    padding: 4px 8px;
+  }
+}

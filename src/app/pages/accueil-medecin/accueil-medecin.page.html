@@ -1,3 +1,5 @@
+<app-header></app-header>
+
 <ion-header>
   <ion-toolbar color="secondary">
     <ion-title>Tableau de bord médecin</ion-title>
@@ -10,116 +12,24 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <div class="welcome-container" *ngIf="medecin">
-    <ion-avatar>
-      <img [src]="medecin.profilePicture || 'assets/default-doctor.png'" alt="Photo de profil">
-    </ion-avatar>
-    <div class="welcome-text">
-      <h1>Bonjour, Dr. {{ medecin.firstName }} {{ medecin.lastName }}</h1>
-      <p>{{ medecin.specialite }}</p>
-    </div>
-  </div>
   
-  <!-- Cartes de statistiques -->
-  <ion-grid>
+  
+  <ion-grid class="simplified-stats" style="margin-top: 20px;">
     <ion-row>
-      <ion-col size="6" size-md="3">
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <div class="stat-icon">
-              <ion-icon name="people"></ion-icon>
-            </div>
-            <div class="stat-info">
-              <h2>{{ stats.totalPatients }}</h2>
-              <p>Patients</p>
-            </div>
-          </ion-card-content>
-        </ion-card>
+      <ion-col size="4" class="ion-text-center">
+        <h2>{{ stats.totalPatients }}</h2>
+        <p>Patients</p>
       </ion-col>
-      
-      <ion-col size="6" size-md="3">
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <div class="stat-icon">
-              <ion-icon name="calendar-check"></ion-icon>
-            </div>
-            <div class="stat-info">
-              <h2>{{ stats.rdvConfirmes }}</h2>
-              <p>RDV confirmés</p>
-            </div>
-          </ion-card-content>
-        </ion-card>
+      <ion-col size="4" class="ion-text-center">
+        <h2>{{ stats.rdvConfirmes }}</h2>
+        <p>RDV confirmés</p>
       </ion-col>
-      
-      <ion-col size="6" size-md="3">
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <div class="stat-icon">
-              <ion-icon name="timer"></ion-icon>
-            </div>
-            <div class="stat-info">
-              <h2>{{ stats.rdvEnAttente }}</h2>
-              <p>En attente</p>
-            </div>
-          </ion-card-content>
-        </ion-card>
-      </ion-col>
-      
-      <ion-col size="6" size-md="3">
-        <ion-card class="stat-card">
-          <ion-card-content>
-            <div class="stat-icon">
-              <ion-icon name="document-text"></ion-icon>
-            </div>
-            <div class="stat-info">
-              <h2>{{ stats.consultations }}</h2>
-              <p>Consultations</p>
-            </div>
-          </ion-card-content>
-        </ion-card>
+      <ion-col size="4" class="ion-text-center">
+        <h2>{{ stats.rdvEnAttente }}</h2>
+        <p>En attente</p>
       </ion-col>
     </ion-row>
   </ion-grid>
-  
-  <!-- Actions rapides -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>
-        <ion-icon name="flash"></ion-icon>
-        Actions rapides
-      </ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="6" size-md="4">
-            <ion-button expand="block" routerLink="/disponibilites-medecin" color="tertiary">
-              <ion-icon name="calendar-outline" slot="start"></ion-icon>
-              Gérer mes disponibilités
-            </ion-button>
-          </ion-col>
-          <ion-col size="6" size-md="4">
-            <ion-button expand="block" routerLink="/rendez-vous-medecin">
-              <ion-icon name="time-outline" slot="start"></ion-icon>
-              Voir mes rendez-vous
-            </ion-button>
-          </ion-col>
-          <ion-col size="6" size-md="4">
-            <ion-button expand="block" routerLink="/messages-list">
-              <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
-              Messages
-            </ion-button>
-          </ion-col>
-          <ion-col size="6" size-md="4">
-            <ion-button expand="block" routerLink="/stats-medecin" color="success">
-              <ion-icon name="stats-chart-outline" slot="start"></ion-icon>
-              Statistiques
-            </ion-button>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
-    </ion-card-content>
-  </ion-card>
   
   <!-- Rendez-vous d'aujourd'hui -->
   <ion-card>
